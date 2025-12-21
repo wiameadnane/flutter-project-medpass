@@ -1,0 +1,460 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../core/constants.dart';
+import '../../providers/user_provider.dart';
+
+class PaymentScreen extends StatefulWidget {
+  const PaymentScreen({super.key});
+
+  @override
+  State<PaymentScreen> createState() => _PaymentScreenState();
+}
+
+class _PaymentScreenState extends State<PaymentScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _cardNumberController = TextEditingController();
+  final _expiryController = TextEditingController();
+  final _cvcController = TextEditingController();
+  final _postalCodeController = TextEditingController();
+
+  int _selectedPaymentMethod = 0;
+  String _selectedCountry = 'United States';
+
+  @override
+  void dispose() {
+    _cardNumberController.dispose();
+    _expiryController.dispose();
+    _cvcController.dispose();
+    _postalCodeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handlePayment() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final userProvider = context.read<UserProvider>();
+    final success = await userProvider.upgradeToPremium();
+
+    if (success && mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Successfully upgraded to Premium!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Center(
+                  child: Text(
+                    AppStrings.proceedToPay,
+                    style: GoogleFonts.outfit(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ).animate().fadeIn(duration: 500.ms),
+
+                const SizedBox(height: AppSizes.paddingM),
+
+                // User name
+                Consumer<UserProvider>(
+                  builder: (context, userProvider, child) {
+                    return Center(
+                      child: Text(
+                        userProvider.user?.fullName ?? 'User',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                    );
+                  },
+                ).animate().fadeIn(duration: 500.ms, delay: 50.ms),
+
+                const SizedBox(height: AppSizes.paddingM),
+
+                // Payment Info header
+                Text(
+                  'PAYMENT INFO',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textDark,
+                  ),
+                ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
+
+                const SizedBox(height: AppSizes.paddingS),
+                const Divider(color: AppColors.divider),
+                const SizedBox(height: AppSizes.paddingL),
+
+                // Payment method tabs
+                Row(
+                  children: [
+                    _buildPaymentMethodTab(0, 'Card', Icons.credit_card),
+                    const SizedBox(width: AppSizes.paddingS),
+                    _buildPaymentMethodTab(1, 'PayPal', Icons.paypal),
+                    const SizedBox(width: AppSizes.paddingS),
+                    _buildPaymentMethodTab(2, 'Apple', Icons.apple),
+                  ],
+                ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
+
+                const SizedBox(height: AppSizes.paddingL),
+
+                // Card number field
+                _buildInputField(
+                  label: 'Card number',
+                  controller: _cardNumberController,
+                  hint: '1234 1234 1234 1234',
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(16),
+                    _CardNumberFormatter(),
+                  ],
+                ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
+
+                const SizedBox(height: AppSizes.paddingM),
+
+                // Expiry and CVC row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInputField(
+                        label: 'Expiry',
+                        controller: _expiryController,
+                        hint: 'MM / YY',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                          _ExpiryDateFormatter(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.paddingM),
+                    Expanded(
+                      child: _buildInputField(
+                        label: 'CVC',
+                        controller: _cvcController,
+                        hint: 'CVC',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(3),
+                        ],
+                      ),
+                    ),
+                  ],
+                ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
+
+                const SizedBox(height: AppSizes.paddingM),
+
+                // Country and Postal code row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDropdownField(
+                        label: 'Country',
+                        value: _selectedCountry,
+                        items: ['United States', 'France', 'Morocco', 'Germany', 'UK'],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCountry = value!;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.paddingM),
+                    Expanded(
+                      child: _buildInputField(
+                        label: 'Postal code',
+                        controller: _postalCodeController,
+                        hint: '90210',
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
+
+                const SizedBox(height: AppSizes.paddingXL),
+
+                // Pay button
+                Consumer<UserProvider>(
+                  builder: (context, userProvider, child) {
+                    return GestureDetector(
+                      onTap: userProvider.isLoading ? null : _handlePayment,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSizes.paddingM),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                        ),
+                        child: Center(
+                          child: Text(
+                            userProvider.isLoading ? 'Processing...' : 'Pay \$12.00',
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ).animate().fadeIn(duration: 500.ms, delay: 350.ms),
+
+                const SizedBox(height: AppSizes.paddingM),
+
+                // Cancel button
+                Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Text(
+                      'Go back',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                  ),
+                ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodTab(int index, String label, IconData icon) {
+    final isSelected = _selectedPaymentMethod == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedPaymentMethod = index;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.inputBorder,
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                size: 20,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF4F5B76),
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFFA5ACB8),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingM,
+              vertical: AppSizes.paddingM,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              borderSide: const BorderSide(color: AppColors.inputBorder, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              borderSide: const BorderSide(color: AppColors.inputBorder, width: 2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF4F5B76),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            border: Border.all(color: AppColors.inputBorder, width: 2),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              icon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+              items: items.map((String item) {
+                return DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(
+                    item,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CardNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text.replaceAll(' ', '');
+    final buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      buffer.write(text[i]);
+      if ((i + 1) % 4 == 0 && i + 1 != text.length) {
+        buffer.write(' ');
+      }
+    }
+    return TextEditingValue(
+      text: buffer.toString(),
+      selection: TextSelection.collapsed(offset: buffer.length),
+    );
+  }
+}
+
+class _ExpiryDateFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text.replaceAll(' / ', '');
+    final buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      buffer.write(text[i]);
+      if (i == 1 && i + 1 != text.length) {
+        buffer.write(' / ');
+      }
+    }
+    return TextEditingValue(
+      text: buffer.toString(),
+      selection: TextSelection.collapsed(offset: buffer.length),
+    );
+  }
+}

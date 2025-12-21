@@ -1,164 +1,118 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
-void main() => runApp(const MedPassApp());
+import 'core/theme.dart';
+import 'models/medical_file_model.dart';
+import 'providers/user_provider.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/onboarding_screen.dart';
+import 'screens/auth/signup_screen.dart';
+import 'screens/billing/billing_screen.dart';
+import 'screens/billing/payment_screen.dart';
+import 'screens/emergency/emergency_screen.dart';
+import 'screens/files/file_viewer_screen.dart';
+import 'screens/files/files_list_screen.dart';
+import 'screens/files/my_files_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/home/personal_card_screen.dart';
+import 'screens/home/qr_code_screen.dart';
+import 'screens/profile/edit_profile_screen.dart';
+import 'screens/profile/personal_info_screen.dart';
+import 'screens/profile/profile_screen.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
+  runApp(const MedPassApp());
+}
 
 class MedPassApp extends StatelessWidget {
   const MedPassApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primaryColor: const Color(0xFF004D7A)),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const OnboardingPage(),
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegisterPage(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Med-Pass',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        initialRoute: '/',
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/':
+              return _buildPageRoute(const OnboardingScreen());
+            case '/login':
+              return _buildPageRoute(const LoginScreen());
+            case '/signup':
+              return _buildPageRoute(const SignUpScreen());
+            case '/home':
+              return _buildPageRoute(const HomeScreen());
+            case '/profile':
+              return _buildPageRoute(const ProfileScreen());
+            case '/personal-info':
+              return _buildPageRoute(const PersonalInfoScreen());
+            case '/edit-profile':
+              return _buildPageRoute(const EditProfileScreen());
+            case '/create-profile':
+              return _buildPageRoute(const EditProfileScreen(isCreating: true));
+            case '/my-files':
+              return _buildPageRoute(const MyFilesScreen());
+            case '/files-list':
+              return _buildPageRoute(const FilesListScreen());
+            case '/file-viewer':
+              final category = settings.arguments as FileCategory;
+              return _buildPageRoute(FileViewerScreen(category: category));
+            case '/important-files':
+              return _buildPageRoute(const FilesListScreen());
+            case '/qr-code':
+              return _buildPageRoute(const QrCodeScreen());
+            case '/emergency':
+              return _buildPageRoute(const EmergencyScreen());
+            case '/personal-card':
+              return _buildPageRoute(const PersonalCardScreen());
+            case '/billing':
+              return _buildPageRoute(const BillingScreen());
+            case '/payment':
+              return _buildPageRoute(const PaymentScreen());
+            default:
+              return _buildPageRoute(const OnboardingScreen());
+          }
+        },
+      ),
+    );
+  }
+
+  static PageRouteBuilder _buildPageRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(1.0, 0.0);
+        const end = Offset.zero;
+        const curve = Curves.easeInOut;
+
+        var tween = Tween(begin: begin, end: end).chain(
+          CurveTween(curve: curve),
+        );
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
       },
-    );
-  }
-}
-
-// --- 1. WELCOME / ONBOARDING PAGE ---
-class OnboardingPage extends StatelessWidget {
-  const OnboardingPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD),
-      body: Column(
-        children: [
-          const SizedBox(height: 60),
-          // Logo Liaison
-          Image.asset('assets/images/logo.jpeg', height: 40),
-          const Spacer(),
-          // Main Illustration
-          Image.asset('assets/images/onboarding_illustration.jpeg', height: 250),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(30),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  "Travel Light with Medpass",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF004D7A)),
-                ),
-                const SizedBox(height: 15),
-                const Text(
-                  "Your Medical Passport in your pocket. Easy, quick and secure access.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 30),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF004D7A)),
-                        onPressed: () => Navigator.pushNamed(context, '/login'),
-                        child: const Text("Login", style: TextStyle(color: Colors.white)),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pushNamed(context, '/register'),
-                        child: const Text("Register"),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// --- 2. LOGIN PAGE ---
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(25.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Image.asset('assets/images/logo.jpeg', height: 50),
-            const SizedBox(height: 40),
-            const Text("Login", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            const TextField(decoration: InputDecoration(labelText: "Email", border: OutlineInputBorder())),
-            const SizedBox(height: 15),
-            const TextField(obscureText: true, decoration: InputDecoration(labelText: "Password", border: OutlineInputBorder())),
-            const SizedBox(height: 10),
-            const Text("Forgot Password?", textAlign: TextAlign.right, style: TextStyle(color: Colors.blue)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(15)),
-              child: const Text("Login"),
-            ),
-            const SizedBox(height: 20),
-            const Center(child: Text("Or login with")),
-            const SizedBox(height: 20),
-            // Social Login Liaison
-            IconButton(
-              icon: Image.asset('assets/images/icon.jpeg', height: 30),
-              onPressed: () {},
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// --- 3. REGISTER PAGE ---
-class RegisterPage extends StatelessWidget {
-  const RegisterPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, iconTheme: const IconThemeData(color: Colors.black)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(25.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Create Account", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            const TextField(decoration: InputDecoration(labelText: "Full Name")),
-            const SizedBox(height: 15),
-            const TextField(decoration: InputDecoration(labelText: "Email")),
-            const SizedBox(height: 15),
-            const TextField(obscureText: true, decoration: InputDecoration(labelText: "Password")),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Sign Up"),
-              ),
-            ),
-          ],
-        ),
-      ),
+      transitionDuration: const Duration(milliseconds: 300),
     );
   }
 }
