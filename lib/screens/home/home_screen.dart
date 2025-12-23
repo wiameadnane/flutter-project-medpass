@@ -6,6 +6,7 @@ import '../../core/constants.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/menu_card.dart';
+import '../../services/firestore_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -200,6 +201,30 @@ class HomeScreen extends StatelessWidget {
                 ).animate().fadeIn(duration: 500.ms, delay: 600.ms).slideX(begin: -0.1),
 
                 const SizedBox(height: AppSizes.paddingXL),
+
+                // Firestore test button (debug/testing only)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Running Firestore test...')),
+                      );
+                      try {
+                        await FirestoreService.writeTestDoc();
+                        final data = await FirestoreService.readTestDoc();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Success: ${data ?? 'no data'}')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Firestore error: $e')),
+                        );
+                      }
+                    },
+                    child: const Text('Test Firestore'),
+                  ),
+                ),
 
                 // Bottom navigation placeholder
                 _buildBottomNav(context),

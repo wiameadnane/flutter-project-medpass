@@ -109,7 +109,7 @@ class PersonalCardScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppSizes.radiusL),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.primary.withAlpha((0.3 * 255).round()),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
@@ -150,7 +150,7 @@ class PersonalCardScreen extends StatelessWidget {
                               style: GoogleFonts.dmSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w400,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withAlpha((0.8 * 255).round()),
                                 letterSpacing: 2,
                               ),
                             ),
@@ -170,7 +170,7 @@ class PersonalCardScreen extends StatelessWidget {
                         right: AppSizes.paddingL,
                         child: Icon(
                           Icons.nfc_rounded,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withAlpha((0.8 * 255).round()),
                           size: 40,
                         ),
                       ),
@@ -179,7 +179,7 @@ class PersonalCardScreen extends StatelessWidget {
                         right: AppSizes.paddingL,
                         child: Icon(
                           Icons.contactless_rounded,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withAlpha((0.8 * 255).round()),
                           size: 40,
                         ),
                       ),

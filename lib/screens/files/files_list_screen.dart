@@ -121,7 +121,7 @@ class FilesListScreen extends StatelessWidget {
           Icon(
             Icons.folder_off_rounded,
             size: 80,
-            color: AppColors.textSecondary.withOpacity(0.5),
+            color: AppColors.textSecondary.withAlpha((0.5 * 255).round()),
           ),
           const SizedBox(height: AppSizes.paddingM),
           Text(
@@ -204,7 +204,7 @@ class FilesListScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSizes.paddingS),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withAlpha((0.2 * 255).round()),
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: Icon(icon, color: Colors.white, size: 28),
@@ -228,7 +228,7 @@ class FilesListScreen extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withAlpha((0.8 * 255).round()),
                       ),
                     ),
                 ],
@@ -236,7 +236,7 @@ class FilesListScreen extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withAlpha((0.7 * 255).round()),
               size: 18,
             ),
           ],

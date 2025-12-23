@@ -114,13 +114,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           Icon(
                             Icons.health_and_safety_rounded,
                             size: 120,
-                            color: AppColors.primary.withOpacity(0.7),
+                            color: AppColors.primary.withAlpha((0.7 * 255).round()),
                           ),
                           const SizedBox(height: AppSizes.paddingM),
                           Icon(
                             Icons.phone_android_rounded,
                             size: 60,
-                            color: AppColors.accent.withOpacity(0.7),
+                            color: AppColors.accent.withAlpha((0.7 * 255).round()),
                           ),
                         ],
                       ),
@@ -197,7 +197,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               decoration: BoxDecoration(
                                 color: _currentPage == index
                                     ? AppColors.textDark
-                                    : AppColors.textSecondary.withOpacity(0.3),
+                                      : AppColors.textSecondary.withAlpha((0.3 * 255).round()),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),

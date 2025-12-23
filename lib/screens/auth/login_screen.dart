@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Icon(
                         Icons.person_outline_rounded,
                         size: 100,
-                        color: AppColors.primary.withOpacity(0.5),
+                        color: AppColors.primary.withAlpha((0.5 * 255).round()),
                       ),
                     ),
                   ).animate().fadeIn(duration: 500.ms, delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),

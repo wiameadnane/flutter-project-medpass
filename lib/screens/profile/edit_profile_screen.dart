@@ -346,7 +346,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
-                  color: AppColors.textSecondary.withOpacity(0.5),
+                  color: AppColors.textSecondary.withAlpha((0.5 * 255).round()),
                 ),
               ),
               icon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),

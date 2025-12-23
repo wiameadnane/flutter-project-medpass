@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/user_model.dart';
 import '../models/medical_file_model.dart';
 
@@ -23,8 +25,19 @@ class UserProvider with ChangeNotifier {
       // Simulate API call
       await Future.delayed(const Duration(seconds: 1));
 
-      // For demo purposes, accept any login
-      _user = UserModel.demoUser.copyWith(email: email);
+      // For now, try to fetch user by email from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (userDoc.docs.isNotEmpty) {
+        _user = UserModel.fromJson(userDoc.docs.first.data());
+      } else {
+        // fallback to demo user if not found
+        _user = UserModel.demoUser.copyWith(email: email);
+      }
       _medicalFiles = MedicalFileModel.demoFiles;
       _setLoading(false);
       return true;
@@ -48,13 +61,17 @@ class UserProvider with ChangeNotifier {
       // Simulate API call
       await Future.delayed(const Duration(seconds: 1));
 
-      // Create new user
+      // Create new user (and persist to Firestore)
+      final newId = FirebaseFirestore.instance.collection('users').doc().id;
       _user = UserModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: newId,
         fullName: fullName,
         email: email,
         phoneNumber: phoneNumber,
+        createdAt: DateTime.now(),
       );
+
+      await FirebaseFirestore.instance.collection('users').doc(newId).set(_user!.toJson());
       _medicalFiles = [];
       _setLoading(false);
       return true;
@@ -101,6 +118,12 @@ class UserProvider with ChangeNotifier {
         nationality: nationality,
         gender: gender,
       );
+
+      // Persist the update to Firestore
+      await FirebaseFirestore.instance.collection('users').doc(_user!.id).update({
+        ..._user!.toJson(),
+        'updated_at': FieldValue.serverTimestamp(),
+      });
 
       _setLoading(false);
       return true;

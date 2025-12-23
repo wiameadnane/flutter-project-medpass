@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+
 class UserModel {
   final String id;
   final String fullName;
@@ -90,38 +92,64 @@ class UserModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'fullName': fullName,
+      'full_name': fullName,
       'email': email,
-      'phoneNumber': phoneNumber,
-      'profileImageUrl': profileImageUrl,
-      'dateOfBirth': dateOfBirth?.toIso8601String(),
-      'bloodType': bloodType,
+      'phone_number': phoneNumber,
+      'profile_image_url': profileImageUrl,
+      'date_of_birth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'blood_type': bloodType,
       'height': height,
       'weight': weight,
-      'nationality': nationality,
+      'country_of_origin': nationality,
       'gender': gender,
-      'isPremium': isPremium,
-      'createdAt': createdAt.toIso8601String(),
+      'is_premium': isPremium,
+      'created_at': Timestamp.fromDate(createdAt),
     };
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    DateTime? dob;
+    final dobVal = json['date_of_birth'] ?? json['dateOfBirth'];
+    if (dobVal != null) {
+      if (dobVal is Timestamp) dob = dobVal.toDate();
+      else if (dobVal is String) dob = DateTime.tryParse(dobVal);
+    }
+
+    DateTime created = DateTime.now();
+    final createdVal = json['created_at'] ?? json['createdAt'];
+    if (createdVal != null) {
+      if (createdVal is Timestamp) created = createdVal.toDate();
+      else if (createdVal is String) created = DateTime.tryParse(createdVal) ?? created;
+    }
+
+    String idVal = json['id'] ?? json['uid'] ?? (json['documentId'] ?? '');
+    String fullNameVal = json['full_name'] ?? json['fullName'] ?? '';
+    String emailVal = json['email'] ?? '';
+
+    double? h;
+    final hVal = json['height'] ?? json['height_cm'];
+    if (hVal is int) h = hVal.toDouble();
+    else if (hVal is double) h = hVal;
+
+    double? w;
+    final wVal = json['weight'] ?? json['weight_kg'];
+    if (wVal is int) w = wVal.toDouble();
+    else if (wVal is double) w = wVal;
+
     return UserModel(
-      id: json['id'] as String,
-      fullName: json['fullName'] as String,
-      email: json['email'] as String,
-      phoneNumber: json['phoneNumber'] as String?,
-      profileImageUrl: json['profileImageUrl'] as String?,
-      dateOfBirth: json['dateOfBirth'] != null
-          ? DateTime.parse(json['dateOfBirth'] as String)
-          : null,
-      bloodType: json['bloodType'] as String?,
-      height: json['height'] as double?,
-      weight: json['weight'] as double?,
-      nationality: json['nationality'] as String?,
-      gender: json['gender'] as String?,
-      isPremium: json['isPremium'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      id: idVal as String,
+      fullName: fullNameVal as String,
+      email: emailVal as String,
+      phoneNumber: (json['phone_number'] ?? json['phoneNumber']) as String?,
+      profileImageUrl: (json['profile_image_url'] ?? json['profileImageUrl']) as String?,
+      dateOfBirth: dob,
+      bloodType: (json['blood_type'] ?? json['bloodType']) as String?,
+      height: h,
+      weight: w,
+      nationality: (json['country_of_origin'] ?? json['nationality']) as String?,
+      gender: (json['gender']) as String?,
+      isPremium: (json['is_premium'] ?? json['isPremium']) as bool? ?? false,
+      createdAt: created,
     );
   }
 

@@ -128,7 +128,7 @@ class ProfileScreen extends StatelessWidget {
                                 vertical: AppSizes.paddingXS,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.error.withOpacity(0.1),
+                                color: AppColors.error.withAlpha((0.1 * 255).round()),
                                 borderRadius: BorderRadius.circular(AppSizes.radiusS),
                               ),
                               child: Text(
@@ -155,7 +155,7 @@ class ProfileScreen extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
                 padding: const EdgeInsets.all(AppSizes.paddingM),
                 decoration: BoxDecoration(
-                  color: AppColors.inputBackground.withOpacity(0.3),
+                  color: AppColors.inputBackground.withAlpha((0.3 * 255).round()),
                   borderRadius: BorderRadius.circular(AppSizes.radiusXL),
                 ),
                 child: Text(
@@ -163,7 +163,7 @@ class ProfileScreen extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 32,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.accent.withOpacity(0.85),
+                    color: AppColors.accent.withAlpha((0.85 * 255).round()),
                   ),
                 ),
               ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
@@ -178,7 +178,7 @@ class ProfileScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(AppSizes.paddingL),
                     margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingXL),
                     decoration: BoxDecoration(
-                      color: AppColors.inputBackground.withOpacity(0.3),
+                      color: AppColors.inputBackground.withAlpha((0.3 * 255).round()),
                       borderRadius: BorderRadius.circular(AppSizes.radiusL),
                     ),
                     child: QrImageView(

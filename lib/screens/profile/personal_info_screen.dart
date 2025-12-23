@@ -110,7 +110,7 @@ class PersonalInfoScreen extends StatelessWidget {
                   Icons.bloodtype_rounded,
                   'Blood Type',
                   user?.bloodType ?? 'Not set',
-                  AppColors.error.withOpacity(0.1),
+                  AppColors.error.withAlpha((0.1 * 255).round()),
                 ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
 
                 const SizedBox(height: AppSizes.paddingM),
@@ -119,7 +119,7 @@ class PersonalInfoScreen extends StatelessWidget {
                   Icons.fitness_center_rounded,
                   'Weight',
                   user?.formattedWeight ?? 'Not set',
-                  AppColors.accent.withOpacity(0.1),
+                  AppColors.accent.withAlpha((0.1 * 255).round()),
                 ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
 
                 const SizedBox(height: AppSizes.paddingM),
@@ -128,7 +128,7 @@ class PersonalInfoScreen extends StatelessWidget {
                   Icons.height_rounded,
                   'Height',
                   user?.formattedHeight ?? 'Not set',
-                  AppColors.primary.withOpacity(0.1),
+                  AppColors.primary.withAlpha((0.1 * 255).round()),
                 ).animate().fadeIn(duration: 500.ms, delay: 350.ms),
 
                 const SizedBox(height: AppSizes.paddingM),
@@ -137,7 +137,7 @@ class PersonalInfoScreen extends StatelessWidget {
                   Icons.flag_rounded,
                   'Nationality',
                   user?.nationality ?? 'Not set',
-                  AppColors.warning.withOpacity(0.1),
+                  AppColors.warning.withAlpha((0.1 * 255).round()),
                 ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
 
                 const SizedBox(height: AppSizes.paddingM),
@@ -146,7 +146,7 @@ class PersonalInfoScreen extends StatelessWidget {
                   Icons.person_rounded,
                   'Gender',
                   user?.gender ?? 'Not set',
-                  AppColors.primaryLight.withOpacity(0.1),
+                  AppColors.primaryLight.withAlpha((0.1 * 255).round()),
                 ).animate().fadeIn(duration: 500.ms, delay: 450.ms),
 
                 const SizedBox(height: AppSizes.paddingXL),

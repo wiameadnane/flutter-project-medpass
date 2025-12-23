@@ -135,7 +135,7 @@ class FileViewerScreen extends StatelessWidget {
           Icon(
             Icons.insert_drive_file_outlined,
             size: 80,
-            color: AppColors.textSecondary.withOpacity(0.5),
+            color: AppColors.textSecondary.withAlpha((0.5 * 255).round()),
           ),
           const SizedBox(height: AppSizes.paddingM),
           Text(
@@ -159,7 +159,7 @@ class FileViewerScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radiusM),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withAlpha((0.3 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -229,7 +229,7 @@ class FileViewerScreen extends StatelessWidget {
                     Icon(
                       Icons.description_rounded,
                       size: 80,
-                      color: AppColors.primary.withOpacity(0.5),
+                      color: AppColors.primary.withAlpha((0.5 * 255).round()),
                     ),
                     const SizedBox(height: AppSizes.paddingM),
                     Text(

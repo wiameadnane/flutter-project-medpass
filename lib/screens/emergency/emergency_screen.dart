@@ -170,7 +170,7 @@ class EmergencyScreen extends StatelessWidget {
                       Icon(
                         Icons.info_outline_rounded,
                         size: 40,
-                        color: AppColors.primary.withOpacity(0.7),
+                        color: AppColors.primary.withAlpha((0.7 * 255).round()),
                       ),
                       const SizedBox(height: AppSizes.paddingM),
                       Text(
@@ -232,7 +232,7 @@ class EmergencyScreen extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withAlpha((0.1 * 255).round()),
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: Icon(icon, color: color, size: 32),

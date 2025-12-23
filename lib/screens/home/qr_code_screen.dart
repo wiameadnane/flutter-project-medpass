@@ -126,7 +126,7 @@ class QrCodeScreen extends StatelessWidget {
                             child: Icon(
                               Icons.person_rounded,
                               size: 50,
-                              color: AppColors.primary.withOpacity(0.5),
+                              color: AppColors.primary.withAlpha((0.5 * 255).round()),
                             ),
                           ),
                           const SizedBox(height: AppSizes.paddingM),
@@ -149,7 +149,7 @@ class QrCodeScreen extends StatelessWidget {
                                     vertical: AppSizes.paddingXS,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.error.withOpacity(0.1),
+                                    color: AppColors.error.withAlpha((0.1 * 255).round()),
                                     borderRadius: BorderRadius.circular(AppSizes.radiusS),
                                   ),
                                   child: Text(

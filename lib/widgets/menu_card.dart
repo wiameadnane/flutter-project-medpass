@@ -45,7 +45,7 @@ class MenuCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSizes.paddingS),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withAlpha((0.2 * 255).round()),
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: Icon(
@@ -68,7 +68,7 @@ class MenuCard extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: (textColor ?? Colors.white).withOpacity(0.7),
+              color: (textColor ?? Colors.white).withAlpha((0.7 * 255).round()),
               size: 18,
             ),
           ],
@@ -129,7 +129,7 @@ class FileCard extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withAlpha((0.7 * 255).round()),
               size: 18,
             ),
           ],

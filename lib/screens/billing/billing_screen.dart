@@ -271,7 +271,7 @@ class BillingScreen extends StatelessWidget {
                 vertical: AppSizes.paddingXS,
               ),
               decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.1),
+                color: AppColors.accent.withAlpha((0.1 * 255).round()),
                 borderRadius: BorderRadius.circular(AppSizes.radiusS),
               ),
               child: Text(

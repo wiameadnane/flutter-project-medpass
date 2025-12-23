@@ -128,7 +128,7 @@ class MyFilesScreen extends StatelessWidget {
                       Icon(
                         Icons.folder_special_rounded,
                         size: 80,
-                        color: AppColors.primary.withOpacity(0.5),
+                        color: AppColors.primary.withAlpha((0.5 * 255).round()),
                       ),
                       const SizedBox(height: AppSizes.paddingM),
                       Text(
@@ -236,7 +236,7 @@ class MyFilesScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSizes.paddingM),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withAlpha((0.1 * 255).round()),
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: Icon(icon, color: AppColors.primary, size: 24),
