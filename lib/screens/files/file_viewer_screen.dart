@@ -24,6 +24,23 @@ class FileViewerScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Back button
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 45,
+                      height: 45,
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundLight,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.primary,
+                        size: 22,
+                      ),
+                    ),
+                  ),
                   // Logo
                   Container(
                     width: 50,
@@ -36,34 +53,6 @@ class FileViewerScreen extends StatelessWidget {
                       Icons.medical_services_rounded,
                       color: AppColors.primary,
                       size: 30,
-                    ),
-                  ),
-                  // Back button
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.paddingM,
-                        vertical: AppSizes.paddingS,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundGrey,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.arrow_back_ios, size: 16, color: AppColors.textDark),
-                          const SizedBox(width: 4),
-                          Text(
-                            AppStrings.goBack,
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ],

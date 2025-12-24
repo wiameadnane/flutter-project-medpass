@@ -21,6 +21,23 @@ class MyFilesScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Back button
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundLight,
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                      ),
+                    ),
                     // Logo
                     Container(
                       width: 50,
@@ -33,34 +50,6 @@ class MyFilesScreen extends StatelessWidget {
                         Icons.medical_services_rounded,
                         color: AppColors.primary,
                         size: 30,
-                      ),
-                    ),
-                    // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.paddingM,
-                          vertical: AppSizes.paddingS,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.backgroundGrey,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.arrow_back_ios, size: 16, color: AppColors.textDark),
-                            const SizedBox(width: 4),
-                            Text(
-                              AppStrings.goBack,
-                              style: GoogleFonts.outfit(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
                   ],
@@ -83,33 +72,36 @@ class MyFilesScreen extends StatelessWidget {
                 // Menu cards
                 MenuCard(
                   title: AppStrings.viewFiles,
+                  subtitle: 'Browse all your medical files',
                   icon: Icons.folder_open_rounded,
                   onTap: () {
                     Navigator.pushNamed(context, '/files-list');
                   },
-                  backgroundColor: AppColors.accent,
+                  accentColor: AppColors.accent,
                 ).animate().fadeIn(duration: 500.ms, delay: 200.ms).slideX(begin: -0.1),
 
                 const SizedBox(height: AppSizes.paddingM),
 
                 MenuCard(
                   title: AppStrings.uploadMore,
-                  icon: Icons.cloud_upload_rounded,
+                  subtitle: 'Add new documents',
+                  icon: Icons.cloud_upload_outlined,
                   onTap: () {
                     _showUploadDialog(context);
                   },
-                  backgroundColor: AppColors.primary,
+                  accentColor: AppColors.primary,
                 ).animate().fadeIn(duration: 500.ms, delay: 300.ms).slideX(begin: -0.1),
 
                 const SizedBox(height: AppSizes.paddingM),
 
                 MenuCard(
                   title: AppStrings.importantInfo,
+                  subtitle: 'Critical health information',
                   icon: Icons.info_outline_rounded,
                   onTap: () {
                     Navigator.pushNamed(context, '/important-files');
                   },
-                  backgroundColor: AppColors.primaryLight,
+                  accentColor: AppColors.primaryLight,
                 ).animate().fadeIn(duration: 500.ms, delay: 400.ms).slideX(begin: -0.1),
 
                 const SizedBox(height: AppSizes.paddingXL * 2),
