@@ -65,7 +65,7 @@ class FileViewerScreen extends StatelessWidget {
               child: Text(
                 AppStrings.allFilesInOneSpace,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.dmSans(
                   fontSize: 32,
                   fontWeight: FontWeight.w600,
                   color: AppColors.accent,

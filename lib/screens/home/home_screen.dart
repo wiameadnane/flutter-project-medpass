@@ -2,243 +2,908 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/constants.dart';
 import '../../providers/user_provider.dart';
-import '../../widgets/custom_text_field.dart';
-import '../../widgets/menu_card.dart';
+import '../../widgets/common_widgets.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isRefreshing = false;
+
+  Future<void> _onRefresh() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+
+    try {
+      final userProvider = context.read<UserProvider>();
+      await userProvider.refreshData();
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       drawer: _buildDrawer(context),
+      floatingActionButton: _buildFAB(context),
       body: Builder(
         builder: (context) => SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.paddingL),
-              child: Column(
+          child: RefreshIndicator(
+            onRefresh: _onRefresh,
+            color: AppColors.primary,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.paddingL),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    _buildHeader(context).animate().fadeIn(duration: 400.ms),
+
+                    const SizedBox(height: AppSizes.paddingL),
+
+                    // Critical Info Card (Always visible)
+                    _buildCriticalInfoCard(context)
+                        .animate()
+                        .fadeIn(duration: 500.ms, delay: 100.ms)
+                        .slideY(begin: -0.1),
+
+                    const SizedBox(height: AppSizes.paddingL),
+
+                    // Quick Actions Row (QR + Emergency)
+                    _buildQuickActions(context)
+                        .animate()
+                        .fadeIn(duration: 500.ms, delay: 200.ms),
+
+                    const SizedBox(height: AppSizes.paddingL),
+
+                    // Main Menu Cards
+                    _buildMainMenuSection(context),
+
+                    const SizedBox(height: AppSizes.paddingL),
+
+                    // Recent Files Section
+                    _buildRecentFilesSection(context)
+                        .animate()
+                        .fadeIn(duration: 500.ms, delay: 500.ms),
+
+                    const SizedBox(height: AppSizes.paddingXL),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // Menu button
+        GestureDetector(
+          onTap: () => Scaffold.of(context).openDrawer(),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.menu_rounded,
+              color: AppColors.textSecondary,
+              size: 24,
+            ),
+          ),
+        ),
+        // App Logo & Name
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: AppColors.primaryGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              ),
+              child: const Icon(
+                Icons.medical_services_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: AppSizes.paddingS),
+            Text(
+              'Med-Pass',
+              style: GoogleFonts.dmSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textDark,
+              ),
+            ),
+          ],
+        ),
+        // Profile button
+        GestureDetector(
+          onTap: () => Navigator.pushNamed(context, '/profile'),
+          child: Consumer<UserProvider>(
+            builder: (context, userProvider, child) {
+              return Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withAlpha((0.3 * 255).round()),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    userProvider.user?.fullName.isNotEmpty == true
+                        ? userProvider.user!.fullName[0].toUpperCase()
+                        : 'U',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCriticalInfoCard(BuildContext context) {
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        final user = userProvider.user;
+        final hasAllergies = user?.allergies.isNotEmpty ?? false;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: AppColors.primaryGradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withAlpha((0.3 * 255).round()),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User greeting
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Header with menu and logo
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Menu button (left side)
-                      GestureDetector(
-                        onTap: () {
-                          Scaffold.of(context).openDrawer();
-                        },
-                        child: Container(
-                          width: 45,
-                          height: 45,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.shadow,
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.menu_rounded,
-                            color: AppColors.textSecondary,
-                            size: 24,
-                          ),
+                      Text(
+                        'Hello, ${user?.fullName.split(' ').first ?? 'User'}',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
-                      // Logo (right side)
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.shadow,
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.medical_services_rounded,
-                          color: AppColors.primary,
-                          size: 30,
+                      Text(
+                        'Your Health Pass',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white.withAlpha((0.8 * 255).round()),
                         ),
                       ),
                     ],
-                  ).animate().fadeIn(duration: 500.ms),
-
-                  const SizedBox(height: AppSizes.paddingL),
-
-                  // Search bar
-                  const CustomSearchField().animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-                  const SizedBox(height: AppSizes.paddingL),
-
-                  // Welcome card
-                  Consumer<UserProvider>(
-                    builder: (context, userProvider, child) {
-                      final user = userProvider.user;
-                      return Container(
-                        padding: const EdgeInsets.all(AppSizes.paddingL),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFFA5BBCF),
-                              Colors.white,
-                              Color(0xFFA5BBCF),
-                            ],
-                            stops: [0.0, 0.5, 1.0],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                  ),
+                  // Premium badge
+                  if (user?.isPremium == true)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingS,
+                        vertical: AppSizes.paddingXS,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha((0.2 * 255).round()),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Premium',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFA5BBCF).withAlpha((0.4 * 255).round()),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+
+              const SizedBox(height: AppSizes.paddingL),
+
+              // Critical info row
+              Row(
+                children: [
+                  // Blood Type
+                  _buildCriticalInfoItem(
+                    icon: Icons.bloodtype_rounded,
+                    label: 'Blood',
+                    value: user?.bloodType ?? 'N/A',
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: AppSizes.paddingL),
+                  // Allergies indicator
+                  Expanded(
+                    child: _buildCriticalInfoItem(
+                      icon: Icons.warning_amber_rounded,
+                      label: 'Allergies',
+                      value: hasAllergies
+                          ? '${user!.allergies.length} known'
+                          : 'None',
+                      color: hasAllergies ? AppColors.warning : Colors.white,
+                      isWarning: hasAllergies,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Show allergies if any
+              if (hasAllergies) ...[
+                const SizedBox(height: AppSizes.paddingM),
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingS),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withAlpha((0.2 * 255).round()),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_rounded, color: AppColors.warning, size: 16),
+                      const SizedBox(width: AppSizes.paddingS),
+                      Expanded(
+                        child: Text(
+                          user!.allergies.join(', '),
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withAlpha((0.15 * 255).round()),
-                                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                                  ),
-                                  child: const Icon(
-                                    Icons.favorite_rounded,
-                                    color: AppColors.primary,
-                                    size: 28,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSizes.paddingM,
-                                    vertical: AppSizes.paddingS,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withAlpha((0.15 * 255).round()),
-                                    borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                                  ),
-                                  child: Text(
-                                    user?.isPremium == true ? 'Premium' : 'Free Plan',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSizes.paddingM),
-                            Text(
-                              'Welcome${user?.fullName != null ? ', ${user!.fullName.split(' ').first}' : ''}!',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                            const SizedBox(height: AppSizes.paddingXS),
-                            Text(
-                              'Your Medical Space',
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            const SizedBox(height: AppSizes.paddingS),
-                            Text(
-                              'All your health records in one secure place',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: AppSizes.paddingL),
+
+              // Emergency contact
+              if (user?.emergencyContactPhone != null &&
+                  user!.emergencyContactPhone!.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingS),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha((0.15 * 255).round()),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.phone_rounded, color: Colors.white, size: 16),
+                      const SizedBox(width: AppSizes.paddingS),
+                      Text(
+                        'Emergency: ${user.emergencyContactName ?? ''} (${user.emergencyContactPhone})',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
                         ),
-                      );
-                    },
-                  ).animate().fadeIn(duration: 500.ms, delay: 200.ms).slideY(begin: -0.1),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-                  const SizedBox(height: AppSizes.paddingL),
+  Widget _buildCriticalInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    bool isWarning = false,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: (isWarning ? AppColors.warning : Colors.white)
+                .withAlpha((0.2 * 255).round()),
+            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: AppSizes.paddingS),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                color: Colors.white.withAlpha((0.7 * 255).round()),
+              ),
+            ),
+            Text(
+              value,
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
-                  // Menu cards - Professional medical design
-                  MenuCard(
-                    title: AppStrings.myFiles,
-                    subtitle: 'View and manage your documents',
-                    icon: Icons.folder_outlined,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/my-files');
-                    },
-                    accentColor: AppColors.primary,
-                  ).animate().fadeIn(duration: 500.ms, delay: 300.ms).slideX(begin: -0.1),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  MenuCard(
-                    title: AppStrings.myQrCode,
-                    subtitle: 'Share your health pass',
-                    icon: Icons.qr_code_2_rounded,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/qr-code');
-                    },
-                    accentColor: const Color(0xFF5B8FB9),
-                  ).animate().fadeIn(duration: 500.ms, delay: 400.ms).slideX(begin: -0.1),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  MenuCard(
-                    title: AppStrings.emergency,
-                    subtitle: 'Quick access in emergencies',
-                    icon: Icons.emergency_outlined,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/emergency');
-                    },
-                    accentColor: const Color(0xFFD9534F),
-                  ).animate().fadeIn(duration: 500.ms, delay: 500.ms).slideX(begin: -0.1),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  MenuCard(
-                    title: AppStrings.personalCard,
-                    subtitle: 'Your medical ID card',
-                    icon: Icons.badge_outlined,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/personal-card');
-                    },
-                    accentColor: AppColors.accent,
-                  ).animate().fadeIn(duration: 500.ms, delay: 600.ms).slideX(begin: -0.1),
-
-                  const SizedBox(height: AppSizes.paddingXL),
-
-                  // Bottom navigation placeholder
-                  _buildBottomNav(context),
+  Widget _buildQuickActions(BuildContext context) {
+    return Row(
+      children: [
+        // Show QR Code Button
+        Expanded(
+          flex: 2,
+          child: GestureDetector(
+            onTap: () => _showQuickQRCode(context),
+            child: Container(
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSizes.paddingS),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha((0.1 * 255).round()),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                    ),
+                    child: const Icon(
+                      Icons.qr_code_2_rounded,
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.paddingM),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Show QR',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      Text(
+                        'Share your profile',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
         ),
+        const SizedBox(width: AppSizes.paddingM),
+        // Emergency Button
+        Expanded(
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/emergency-mode'),
+            child: Container(
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: AppColors.emergencyGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.emergency.withAlpha((0.3 * 255).round()),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.emergency_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                  const SizedBox(height: AppSizes.paddingXS),
+                  Text(
+                    'SOS',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainMenuSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Quick Access',
+          style: GoogleFonts.dmSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
+        const SizedBox(height: AppSizes.paddingM),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMenuCard(
+                context,
+                icon: Icons.folder_rounded,
+                title: 'My Files',
+                subtitle: 'Documents',
+                color: AppColors.primary,
+                onTap: () => Navigator.pushNamed(context, '/my-files'),
+              ),
+            ),
+            const SizedBox(width: AppSizes.paddingM),
+            Expanded(
+              child: _buildMenuCard(
+                context,
+                icon: Icons.person_rounded,
+                title: 'Profile',
+                subtitle: 'View info',
+                color: AppColors.accent,
+                onTap: () => Navigator.pushNamed(context, '/profile'),
+              ),
+            ),
+          ],
+        ).animate().fadeIn(duration: 500.ms, delay: 350.ms),
+        const SizedBox(height: AppSizes.paddingM),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMenuCard(
+                context,
+                icon: Icons.credit_card_rounded,
+                title: 'Health Card',
+                subtitle: 'NFC Card',
+                color: AppColors.medication,
+                onTap: () => Navigator.pushNamed(context, '/personal-card'),
+              ),
+            ),
+            const SizedBox(width: AppSizes.paddingM),
+            Expanded(
+              child: _buildMenuCard(
+                context,
+                icon: Icons.local_hospital_rounded,
+                title: 'Emergency',
+                subtitle: 'Contacts',
+                color: AppColors.emergency,
+                onTap: () => Navigator.pushNamed(context, '/emergency'),
+              ),
+            ),
+          ],
+        ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
+      ],
+    );
+  }
+
+  Widget _buildMenuCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: color.withAlpha((0.1 * 255).round()),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: AppSizes.paddingM),
+            Text(
+              title,
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentFilesSection(BuildContext context) {
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        final recentFiles = userProvider.medicalFiles.take(3).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Recent Files',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/my-files'),
+                  child: Text(
+                    'See All',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.paddingM),
+            if (recentFiles.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSizes.paddingXL),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                  border: Border.all(
+                    color: AppColors.divider,
+                    style: BorderStyle.solid,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.folder_open_rounded,
+                      size: 48,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(height: AppSizes.paddingM),
+                    Text(
+                      'No files yet',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.paddingXS),
+                    Text(
+                      'Add your first medical document',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...recentFiles.map((file) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSizes.paddingS),
+                    child: _buildRecentFileItem(context, file),
+                  )),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentFileItem(BuildContext context, dynamic file) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/file-viewer', arguments: file.category),
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: AppColors.document.withAlpha((0.1 * 255).round()),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              ),
+              child: const Icon(
+                Icons.description_rounded,
+                color: AppColors.document,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: AppSizes.paddingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    file.name,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    file.categoryName,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: AppColors.textMuted,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showQuickQRCode(BuildContext context) {
+    final user = context.read<UserProvider>().user;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppSizes.paddingXL),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXL)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppSizes.paddingL),
+            Text(
+              'Your Health Pass',
+              style: GoogleFonts.dmSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: AppSizes.paddingXL),
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingL),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              ),
+              child: QrImageView(
+                data: user?.id ?? 'medpass-user',
+                version: QrVersions.auto,
+                size: 200,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: AppColors.primary,
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSizes.paddingL),
+            Text(
+              'Scan to view medical profile',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSizes.paddingL),
+            GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/qr-code');
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSizes.paddingM),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                ),
+                child: Center(
+                  child: Text(
+                    'View Full Screen',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSizes.paddingM),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFAB(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: () {
+        // TODO: Navigate to add document screen
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Add document feature coming soon'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      },
+      backgroundColor: AppColors.accent,
+      elevation: 8,
+      child: const Icon(
+        Icons.add_rounded,
+        color: Colors.white,
+        size: 28,
       ),
     );
   }
@@ -256,9 +921,9 @@ class HomeScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSizes.paddingL),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryLight],
+                  colors: AppColors.primaryGradient,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -322,19 +987,17 @@ class HomeScreen extends StatelessWidget {
                 Navigator.pushNamed(context, '/profile');
               },
             ),
-
             _buildDrawerItem(
-              icon: Icons.edit_outlined,
-              title: 'Edit Profile',
+              icon: Icons.folder_outlined,
+              title: 'My Files',
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/edit-profile');
+                Navigator.pushNamed(context, '/my-files');
               },
             ),
-
             _buildDrawerItem(
               icon: Icons.credit_card_outlined,
-              title: 'Billing Info',
+              title: 'Billing & Plans',
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/billing');
@@ -342,7 +1005,7 @@ class HomeScreen extends StatelessWidget {
             ),
 
             const Divider(
-              color: AppColors.inputBackground,
+              color: AppColors.divider,
               indent: AppSizes.paddingL,
               endIndent: AppSizes.paddingL,
             ),
@@ -352,15 +1015,13 @@ class HomeScreen extends StatelessWidget {
               title: 'Settings',
               onTap: () {
                 Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings');
               },
             ),
-
             _buildDrawerItem(
               icon: Icons.help_outline_rounded,
               title: 'Help & Support',
-              onTap: () {
-                Navigator.pop(context);
-              },
+              onTap: () => Navigator.pop(context),
             ),
 
             const Spacer(),
@@ -371,18 +1032,23 @@ class HomeScreen extends StatelessWidget {
               child: Consumer<UserProvider>(
                 builder: (context, userProvider, child) {
                   return GestureDetector(
-                    onTap: () {
-                      userProvider.logout();
-                      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                    onTap: () async {
+                      final confirmed = await ConfirmDialog.showLogout(context);
+                      if (confirmed && context.mounted) {
+                        await userProvider.logout();
+                        if (context.mounted) {
+                          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                        }
+                      }
                     },
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(AppSizes.paddingM),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withAlpha((0.1 * 255).round()),
+                        color: AppColors.emergency.withAlpha((0.1 * 255).round()),
                         borderRadius: BorderRadius.circular(AppSizes.radiusL),
                         border: Border.all(
-                          color: AppColors.error.withAlpha((0.3 * 255).round()),
+                          color: AppColors.emergency.withAlpha((0.3 * 255).round()),
                         ),
                       ),
                       child: Row(
@@ -390,7 +1056,7 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.logout_rounded,
-                            color: AppColors.error,
+                            color: AppColors.emergency,
                             size: 20,
                           ),
                           const SizedBox(width: AppSizes.paddingS),
@@ -399,7 +1065,7 @@ class HomeScreen extends StatelessWidget {
                             style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.error,
+                              color: AppColors.emergency,
                             ),
                           ),
                         ],
@@ -437,92 +1103,6 @@ class HomeScreen extends StatelessWidget {
       ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
-          child: Row(
-            children: [
-              _buildNavItem(Icons.home_rounded, 'Home', true, () {}),
-              const SizedBox(width: AppSizes.paddingL),
-              _buildNavItem(Icons.folder_rounded, 'Files', false, () {
-                Navigator.pushNamed(context, '/my-files');
-              }),
-              const SizedBox(width: AppSizes.paddingL),
-              _buildNavItem(Icons.qr_code_scanner_rounded, 'Scan', false, () {
-                Navigator.pushNamed(context, '/qr-code');
-              }),
-              const SizedBox(width: AppSizes.paddingL),
-              _buildNavItem(Icons.person_rounded, 'Profile', false, () {
-                Navigator.pushNamed(context, '/profile');
-              }),
-              const SizedBox(width: AppSizes.paddingL),
-              _buildNavItem(Icons.emergency_rounded, 'Emergency', false, () {
-                Navigator.pushNamed(context, '/emergency');
-              }),
-              const SizedBox(width: AppSizes.paddingL),
-              _buildNavItem(Icons.credit_card_rounded, 'Card', false, () {
-                Navigator.pushNamed(context, '/personal-card');
-              }),
-            ],
-          ),
-        ),
-      ),
-    ).animate().fadeIn(duration: 500.ms, delay: 700.ms).slideY(begin: 0.3);
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingM,
-          vertical: AppSizes.paddingS,
-        ),
-        decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.primary.withAlpha((0.1 * 255).round())
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? AppColors.primary : AppColors.textSecondary,
-              size: 28,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -61,7 +61,7 @@ class BillingScreen extends StatelessWidget {
                 // Title
                 Text(
                   AppStrings.billingPlan,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.dmSans(
                     fontSize: 36,
                     fontWeight: FontWeight.w600,
                     color: AppColors.accent,
@@ -139,7 +139,7 @@ class BillingScreen extends StatelessWidget {
                         child: Center(
                           child: Text(
                             'You are a Premium member',
-                            style: GoogleFonts.montserrat(
+                            style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
@@ -162,7 +162,7 @@ class BillingScreen extends StatelessWidget {
                         child: Center(
                           child: Text(
                             AppStrings.subscribeToPremium,
-                            style: GoogleFonts.montserrat(
+                            style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,

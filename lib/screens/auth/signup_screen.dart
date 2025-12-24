@@ -92,7 +92,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Center(
                     child: Text(
                       AppStrings.signUp,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.dmSans(
                         fontSize: 40,
                         fontWeight: FontWeight.w600,
                         color: AppColors.accent,
@@ -207,7 +207,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     children: [
                       Text(
                         AppStrings.haveAccount,
-                        style: GoogleFonts.montserrat(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textPrimary,
@@ -220,7 +220,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                         child: Text(
                           AppStrings.login,
-                          style: GoogleFonts.montserrat(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textDark,

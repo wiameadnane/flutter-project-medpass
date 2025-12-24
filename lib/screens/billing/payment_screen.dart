@@ -86,7 +86,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 Center(
                   child: Text(
                     AppStrings.proceedToPay,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.dmSans(
                       fontSize: 36,
                       fontWeight: FontWeight.w600,
                       color: AppColors.accent,
@@ -234,7 +234,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         child: Center(
                           child: Text(
                             userProvider.isLoading ? 'Processing...' : 'Pay \$12.00',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.dmSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -254,7 +254,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     onTap: () => Navigator.pop(context),
                     child: Text(
                       'Go back',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.dmSans(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textDark,

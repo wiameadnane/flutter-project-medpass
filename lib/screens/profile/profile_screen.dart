@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/constants.dart';
 import '../../providers/user_provider.dart';
+import '../../widgets/common_widgets.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -165,7 +166,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 child: Text(
                   AppStrings.myHealthPass,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.dmSans(
                     fontSize: 32,
                     fontWeight: FontWeight.w600,
                     color: AppColors.accent.withAlpha((0.85 * 255).round()),
@@ -240,9 +241,14 @@ class ProfileScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
                 child: GestureDetector(
-                  onTap: () {
-                    context.read<UserProvider>().logout();
-                    Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                  onTap: () async {
+                    final confirmed = await ConfirmDialog.showLogout(context);
+                    if (confirmed && context.mounted) {
+                      await context.read<UserProvider>().logout();
+                      if (context.mounted) {
+                        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                      }
+                    }
                   },
                   child: Container(
                     width: double.infinity,

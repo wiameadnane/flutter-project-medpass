@@ -76,7 +76,7 @@ class QrCodeScreen extends StatelessWidget {
                 // Title
                 Text(
                   AppStrings.myHealthPass,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.dmSans(
                     fontSize: 36,
                     fontWeight: FontWeight.w600,
                     color: AppColors.accent,

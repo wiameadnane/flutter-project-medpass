@@ -163,6 +163,72 @@ class PersonalInfoScreen extends StatelessWidget {
                 ).animate().fadeIn(duration: 500.ms, delay: 450.ms),
 
                 const SizedBox(height: AppSizes.paddingXL),
+
+                // Critical Medical Info section
+                Text(
+                  'CRITICAL MEDICAL INFO',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.emergency,
+                  ),
+                ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
+
+                const SizedBox(height: AppSizes.paddingS),
+                const Divider(color: AppColors.divider),
+                const SizedBox(height: AppSizes.paddingM),
+
+                // Allergies
+                _buildListSection(
+                  Icons.warning_amber_rounded,
+                  'Allergies',
+                  user?.allergies ?? [],
+                  AppColors.allergy,
+                ).animate().fadeIn(duration: 500.ms, delay: 550.ms),
+
+                const SizedBox(height: AppSizes.paddingM),
+
+                // Medical Conditions
+                _buildListSection(
+                  Icons.medical_information_rounded,
+                  'Medical Conditions',
+                  user?.medicalConditions ?? [],
+                  AppColors.info,
+                ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
+
+                const SizedBox(height: AppSizes.paddingM),
+
+                // Current Medications
+                _buildListSection(
+                  Icons.medication_rounded,
+                  'Current Medications',
+                  user?.currentMedications ?? [],
+                  AppColors.medication,
+                ).animate().fadeIn(duration: 500.ms, delay: 650.ms),
+
+                const SizedBox(height: AppSizes.paddingXL),
+
+                // Emergency Contact section
+                Text(
+                  'EMERGENCY CONTACT',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.success,
+                  ),
+                ).animate().fadeIn(duration: 500.ms, delay: 700.ms),
+
+                const SizedBox(height: AppSizes.paddingS),
+                const Divider(color: AppColors.divider),
+                const SizedBox(height: AppSizes.paddingM),
+
+                _buildEmergencyContactCard(
+                  name: user?.emergencyContactName,
+                  phone: user?.emergencyContactPhone,
+                  relation: user?.emergencyContactRelation,
+                ).animate().fadeIn(duration: 500.ms, delay: 750.ms),
+
+                const SizedBox(height: AppSizes.paddingXL),
               ],
             ),
           );
@@ -236,6 +302,153 @@ class PersonalInfoScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildListSection(IconData icon, String label, List<String> items, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        color: color.withAlpha((0.1 * 255).round()),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        border: Border.all(color: color.withAlpha((0.3 * 255).round())),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 24, color: color),
+              const SizedBox(width: AppSizes.paddingS),
+              Text(
+                label,
+                style: GoogleFonts.dmSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.paddingM),
+          if (items.isEmpty)
+            Text(
+              'None listed',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textSecondary,
+              ),
+            )
+          else
+            Wrap(
+              spacing: AppSizes.paddingS,
+              runSpacing: AppSizes.paddingS,
+              children: items.map((item) => Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingM,
+                  vertical: AppSizes.paddingS,
+                ),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: Text(
+                  item,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+              )).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactCard({
+    String? name,
+    String? phone,
+    String? relation,
+  }) {
+    final hasContact = phone != null && phone.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        color: hasContact
+            ? AppColors.success.withAlpha((0.1 * 255).round())
+            : AppColors.backgroundGrey,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        border: hasContact
+            ? Border.all(color: AppColors.success.withAlpha((0.3 * 255).round()))
+            : null,
+      ),
+      child: hasContact
+          ? Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingM),
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  ),
+                  child: const Icon(
+                    Icons.contact_emergency_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.paddingM),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name ?? 'Contact',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      if (relation != null && relation.isNotEmpty)
+                        Text(
+                          relation,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      const SizedBox(height: AppSizes.paddingXS),
+                      Text(
+                        phone,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          : Center(
+              child: Text(
+                'No emergency contact set',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
     );
   }
 }

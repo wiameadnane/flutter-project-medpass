@@ -5,17 +5,32 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../models/medical_file_model.dart';
 import '../../providers/user_provider.dart';
+import '../../widgets/premium_widgets.dart';
 
-class FilesListScreen extends StatelessWidget {
+class FilesListScreen extends StatefulWidget {
   const FilesListScreen({super.key});
+
+  @override
+  State<FilesListScreen> createState() => _FilesListScreenState();
+}
+
+class _FilesListScreenState extends State<FilesListScreen> {
+  Future<void> _onRefresh() async {
+    final userProvider = context.read<UserProvider>();
+    await userProvider.refreshData();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
+        child: RefreshIndicator(
+          onRefresh: _onRefresh,
+          color: AppColors.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
             padding: const EdgeInsets.all(AppSizes.paddingL),
             child: Column(
               children: [
@@ -63,7 +78,7 @@ class FilesListScreen extends StatelessWidget {
                 Text(
                   AppStrings.allFilesInOneSpace,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.dmSans(
                     fontSize: 32,
                     fontWeight: FontWeight.w600,
                     color: AppColors.accent,
@@ -76,18 +91,29 @@ class FilesListScreen extends StatelessWidget {
                 Consumer<UserProvider>(
                   builder: (context, userProvider, child) {
                     final files = userProvider.medicalFiles;
-                    if (files.isEmpty) {
-                      return _buildEmptyState();
-                    }
+                    final isPremium = userProvider.user?.isPremium ?? false;
+
                     return Column(
                       children: [
-                        ...FileCategory.values.map((category) {
-                          return _buildFileCard(
-                            context,
-                            category,
-                            userProvider.getFilesByCategory(category),
-                          );
-                        }),
+                        // File limit indicator for free users
+                        if (!isPremium) ...[
+                          FileLimitIndicator(
+                            currentCount: files.length,
+                            maxCount: PremiumFeatures.freeFileLimit,
+                          ),
+                          const SizedBox(height: AppSizes.paddingL),
+                        ],
+
+                        if (files.isEmpty)
+                          _buildEmptyState()
+                        else
+                          ...FileCategory.values.map((category) {
+                            return _buildFileCard(
+                              context,
+                              category,
+                              userProvider.getFilesByCategory(category),
+                            );
+                          }),
                       ],
                     );
                   },
@@ -97,6 +123,7 @@ class FilesListScreen extends StatelessWidget {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

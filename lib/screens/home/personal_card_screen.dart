@@ -73,7 +73,7 @@ class PersonalCardScreen extends StatelessWidget {
                 // Title
                 Text(
                   AppStrings.comingSoon,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.dmSans(
                     fontSize: 36,
                     fontWeight: FontWeight.w600,
                     color: AppColors.accent,
@@ -119,7 +119,7 @@ class PersonalCardScreen extends StatelessWidget {
                             const SizedBox(width: AppSizes.paddingS),
                             Text(
                               'Med-Pass',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.dmSans(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,

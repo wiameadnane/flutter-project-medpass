@@ -88,7 +88,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       const SizedBox(width: AppSizes.paddingM),
                       Text(
                         'Med-Pass',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.dmSans(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,

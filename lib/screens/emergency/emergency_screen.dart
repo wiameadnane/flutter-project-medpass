@@ -86,7 +86,7 @@ class EmergencyScreen extends StatelessWidget {
                 // Title
                 Text(
                   AppStrings.emergencyGuide,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.dmSans(
                     fontSize: 36,
                     fontWeight: FontWeight.w600,
                     color: AppColors.accent,
@@ -261,7 +261,7 @@ class EmergencyScreen extends StatelessWidget {
               ),
               child: Text(
                 number,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.dmSans(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,

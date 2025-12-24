@@ -1,39 +1,61 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary Colors
-  static const Color primary = Color(0xFF12517F);
-  static const Color primaryLight = Color(0xFF4A7398);
-  static const Color primaryDark = Color(0xFF07426C);
+  // Primary Colors - Trust & Professionalism
+  static const Color primary = Color(0xFF2D7DD2);
+  static const Color primaryLight = Color(0xFF5A9FE8);
+  static const Color primaryDark = Color(0xFF1A5FA4);
 
-  // Accent Colors
-  static const Color accent = Color(0xFF1DA078);
-  static const Color accentLight = Color(0xFF459173);
+  // Secondary/Accent Colors - Health & Wellness
+  static const Color accent = Color(0xFF45B7A0);
+  static const Color accentLight = Color(0xFF6FCDB8);
+  static const Color accentDark = Color(0xFF2E9A84);
 
-  // Background Colors
+  // Emergency Colors - Urgency & Alerts
+  static const Color emergency = Color(0xFFE63946);
+  static const Color emergencyLight = Color(0xFFFF6B6B);
+  static const Color emergencyDark = Color(0xFFC62828);
+
+  // Background Colors - Clean & Medical
   static const Color background = Colors.white;
-  static const Color backgroundLight = Color(0xFFF3F9FE);
-  static const Color backgroundGrey = Color(0xFFF4F4F4);
+  static const Color backgroundLight = Color(0xFFF8F9FA);
+  static const Color backgroundGrey = Color(0xFFF1F3F4);
+  static const Color backgroundCard = Color(0xFFFFFFFF);
 
-  // Text Colors
-  static const Color textPrimary = Color(0xFF36454F);
-  static const Color textSecondary = Color(0xFF7F7F7F);
-  static const Color textDark = Colors.black;
+  // Text Colors - Readability
+  static const Color textPrimary = Color(0xFF2B2D42);
+  static const Color textSecondary = Color(0xFF6C757D);
+  static const Color textDark = Color(0xFF1A1A2E);
   static const Color textLight = Colors.white;
+  static const Color textMuted = Color(0xFF9CA3AF);
 
   // Input Colors
-  static const Color inputBackground = Color(0xFFD3D3D3);
-  static const Color inputBorder = Color(0xFFE0E0E0);
+  static const Color inputBackground = Color(0xFFF1F3F4);
+  static const Color inputBorder = Color(0xFFE5E7EB);
+  static const Color inputFocusBorder = Color(0xFF2D7DD2);
 
   // Status Colors
-  static const Color success = Color(0xFF1DA078);
-  static const Color error = Color(0xFFE53935);
-  static const Color warning = Color(0xFFCFAF00);
+  static const Color success = Color(0xFF52B788);
+  static const Color error = Color(0xFFE63946);
+  static const Color warning = Color(0xFFF4A261);
+  static const Color info = Color(0xFF4ECDC4);
+
+  // Medical-Specific Colors
+  static const Color bloodType = Color(0xFFE63946);
+  static const Color allergy = Color(0xFFF4A261);
+  static const Color medication = Color(0xFF9B5DE5);
+  static const Color document = Color(0xFF2D7DD2);
 
   // Other
-  static const Color divider = Color(0xFFA3A3A3);
-  static const Color shadow = Color(0x11000000);
+  static const Color divider = Color(0xFFE5E7EB);
+  static const Color shadow = Color(0x14000000);
+  static const Color overlay = Color(0x80000000);
   static const Color blueOverlay = Color(0x6D017AEB);
+
+  // Gradients
+  static const List<Color> primaryGradient = [Color(0xFF2D7DD2), Color(0xFF45B7A0)];
+  static const List<Color> emergencyGradient = [Color(0xFFE63946), Color(0xFFFF6B6B)];
+  static const List<Color> cardGradient = [Color(0xFFF8F9FA), Color(0xFFFFFFFF)];
 }
 
 class AppSizes {

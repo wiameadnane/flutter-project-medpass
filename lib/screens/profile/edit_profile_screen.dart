@@ -18,10 +18,22 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  // Personal Info Controllers
   late TextEditingController _dobController;
   late TextEditingController _heightController;
   late TextEditingController _weightController;
   late TextEditingController _countryController;
+
+  // Emergency Contact Controllers
+  late TextEditingController _emergencyNameController;
+  late TextEditingController _emergencyPhoneController;
+  late TextEditingController _emergencyRelationController;
+
+  // Allergies & Conditions Controllers
+  late TextEditingController _allergiesController;
+  late TextEditingController _conditionsController;
+  late TextEditingController _medicationsController;
 
   String? _selectedBloodType;
   String? _selectedGender;
@@ -34,6 +46,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     final user = context.read<UserProvider>().user;
+
+    // Personal Info
     _dobController = TextEditingController(text: user?.formattedDateOfBirth ?? '');
     _heightController = TextEditingController(
       text: user?.height != null ? user!.height!.toInt().toString() : '',
@@ -45,6 +59,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _selectedBloodType = user?.bloodType;
     _selectedGender = user?.gender;
     _selectedDate = user?.dateOfBirth;
+
+    // Emergency Contact
+    _emergencyNameController = TextEditingController(text: user?.emergencyContactName ?? '');
+    _emergencyPhoneController = TextEditingController(text: user?.emergencyContactPhone ?? '');
+    _emergencyRelationController = TextEditingController(text: user?.emergencyContactRelation ?? '');
+
+    // Allergies & Conditions (comma-separated)
+    _allergiesController = TextEditingController(
+      text: user?.allergies.join(', ') ?? '',
+    );
+    _conditionsController = TextEditingController(
+      text: user?.medicalConditions.join(', ') ?? '',
+    );
+    _medicationsController = TextEditingController(
+      text: user?.currentMedications.join(', ') ?? '',
+    );
   }
 
   @override
@@ -53,7 +83,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _heightController.dispose();
     _weightController.dispose();
     _countryController.dispose();
+    _emergencyNameController.dispose();
+    _emergencyPhoneController.dispose();
+    _emergencyRelationController.dispose();
+    _allergiesController.dispose();
+    _conditionsController.dispose();
+    _medicationsController.dispose();
     super.dispose();
+  }
+
+  List<String> _parseCommaSeparated(String text) {
+    if (text.trim().isEmpty) return [];
+    return text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
   }
 
   Future<void> _selectDate() async {
@@ -88,6 +129,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Validate critical info for new profiles
+    if (widget.isCreating && _selectedBloodType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select your blood type - this is critical for emergencies'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
     final userProvider = context.read<UserProvider>();
     final success = await userProvider.updateProfile(
       dateOfBirth: _selectedDate,
@@ -96,6 +148,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       weight: double.tryParse(_weightController.text),
       nationality: _countryController.text.trim(),
       gender: _selectedGender,
+      emergencyContactName: _emergencyNameController.text.trim(),
+      emergencyContactPhone: _emergencyPhoneController.text.trim(),
+      emergencyContactRelation: _emergencyRelationController.text.trim(),
+      allergies: _parseCommaSeparated(_allergiesController.text),
+      medicalConditions: _parseCommaSeparated(_conditionsController.text),
+      currentMedications: _parseCommaSeparated(_medicationsController.text),
     );
 
     if (success && mounted) {
@@ -116,7 +174,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundLight,
       appBar: widget.isCreating
           ? null
           : AppBar(
@@ -142,8 +200,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: const Icon(
                         Icons.medical_services_rounded,
@@ -151,134 +216,164 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         size: 30,
                       ),
                     ).animate().fadeIn(duration: 500.ms),
-
                     const SizedBox(height: AppSizes.paddingL),
                   ],
 
                   // Title
                   Center(
                     child: Text(
-                      widget.isCreating ? AppStrings.createProfile : 'Edit Profile',
-                      style: GoogleFonts.outfit(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.accent,
+                      widget.isCreating ? 'Complete Your Profile' : 'Edit Profile',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
                       ),
                     ),
                   ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
 
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  // User name
-                  Consumer<UserProvider>(
-                    builder: (context, userProvider, child) {
-                      return Center(
-                        child: Text(
-                          userProvider.user?.fullName ?? 'User',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textDark,
-                          ),
+                  if (widget.isCreating) ...[
+                    const SizedBox(height: AppSizes.paddingS),
+                    Center(
+                      child: Text(
+                        'This information helps medical professionals in emergencies',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textSecondary,
                         ),
-                      );
-                    },
-                  ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
+                      ),
+                    ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
+                  ],
 
-                  const SizedBox(height: AppSizes.paddingM),
+                  const SizedBox(height: AppSizes.paddingXL),
 
-                  // Personal Info header
-                  Text(
-                    AppStrings.personalInfo,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textDark,
-                    ),
+                  // ==========================================
+                  // CRITICAL MEDICAL INFO (Priority Section)
+                  // ==========================================
+                  _buildSectionHeader(
+                    'Critical Medical Info',
+                    Icons.emergency_rounded,
+                    AppColors.emergency,
+                    isRequired: true,
                   ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
 
-                  const SizedBox(height: AppSizes.paddingS),
-                  const Divider(color: AppColors.divider),
                   const SizedBox(height: AppSizes.paddingM),
 
-                  // Date of birth
-                  CustomTextField(
-                    label: AppStrings.dateOfBirth,
-                    hint: 'DD/MM/YYYY',
-                    controller: _dobController,
-                    readOnly: true,
-                    onTap: _selectDate,
-                    suffixIcon: const Icon(Icons.calendar_today, color: AppColors.textSecondary),
-                  ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  // Blood Type dropdown
+                  // Blood Type (Required)
                   _buildDropdownField(
-                    label: 'Blood Type',
+                    label: 'Blood Type *',
                     value: _selectedBloodType,
                     items: _bloodTypes,
+                    icon: Icons.bloodtype_rounded,
+                    iconColor: AppColors.bloodType,
                     onChanged: (value) {
                       setState(() {
                         _selectedBloodType = value;
                       });
                     },
+                  ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  // Allergies
+                  _buildTextFieldWithIcon(
+                    label: 'Allergies',
+                    hint: 'e.g., Penicillin, Peanuts, Latex',
+                    controller: _allergiesController,
+                    icon: Icons.warning_amber_rounded,
+                    iconColor: AppColors.allergy,
+                    helperText: 'Separate multiple allergies with commas',
                   ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
-                  // Height
-                  CustomTextField(
-                    label: AppStrings.height,
-                    hint: '170',
-                    controller: _heightController,
-                    keyboardType: TextInputType.number,
-                    suffixIcon: Padding(
-                      padding: const EdgeInsets.all(AppSizes.paddingM),
-                      child: Text(
-                        'cm',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
+                  // Medical Conditions
+                  _buildTextFieldWithIcon(
+                    label: 'Medical Conditions',
+                    hint: 'e.g., Diabetes, Asthma, Heart Disease',
+                    controller: _conditionsController,
+                    icon: Icons.medical_information_rounded,
+                    iconColor: AppColors.primary,
+                    helperText: 'Separate multiple conditions with commas',
                   ).animate().fadeIn(duration: 500.ms, delay: 350.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
-                  // Weight
-                  CustomTextField(
-                    label: AppStrings.weight,
-                    hint: '65',
-                    controller: _weightController,
-                    keyboardType: TextInputType.number,
-                    suffixIcon: Padding(
-                      padding: const EdgeInsets.all(AppSizes.paddingM),
-                      child: Text(
-                        'kg',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
+                  // Current Medications
+                  _buildTextFieldWithIcon(
+                    label: 'Current Medications',
+                    hint: 'e.g., Aspirin, Insulin, Ventolin',
+                    controller: _medicationsController,
+                    icon: Icons.medication_rounded,
+                    iconColor: AppColors.medication,
+                    helperText: 'Separate multiple medications with commas',
                   ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
 
-                  const SizedBox(height: AppSizes.paddingM),
+                  const SizedBox(height: AppSizes.paddingXL),
 
-                  // Country of origin
-                  CustomTextField(
-                    label: AppStrings.countryOfOrigin,
-                    hint: 'Morocco',
-                    controller: _countryController,
+                  // ==========================================
+                  // EMERGENCY CONTACT
+                  // ==========================================
+                  _buildSectionHeader(
+                    'Emergency Contact',
+                    Icons.contact_phone_rounded,
+                    AppColors.accent,
                   ).animate().fadeIn(duration: 500.ms, delay: 450.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
-                  // Gender dropdown
+                  CustomTextField(
+                    label: 'Contact Name',
+                    hint: 'John Doe',
+                    controller: _emergencyNameController,
+                  ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  CustomTextField(
+                    label: 'Contact Phone',
+                    hint: '+1 234 567 8900',
+                    controller: _emergencyPhoneController,
+                    keyboardType: TextInputType.phone,
+                  ).animate().fadeIn(duration: 500.ms, delay: 550.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  CustomTextField(
+                    label: 'Relationship',
+                    hint: 'e.g., Spouse, Parent, Sibling',
+                    controller: _emergencyRelationController,
+                  ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
+
+                  const SizedBox(height: AppSizes.paddingXL),
+
+                  // ==========================================
+                  // PERSONAL INFO
+                  // ==========================================
+                  _buildSectionHeader(
+                    'Personal Information',
+                    Icons.person_rounded,
+                    AppColors.primary,
+                  ).animate().fadeIn(duration: 500.ms, delay: 650.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  // Date of Birth
+                  CustomTextField(
+                    label: 'Date of Birth',
+                    hint: 'DD/MM/YYYY',
+                    controller: _dobController,
+                    readOnly: true,
+                    onTap: _selectDate,
+                    suffixIcon: const Icon(Icons.calendar_today, color: AppColors.textSecondary),
+                  ).animate().fadeIn(duration: 500.ms, delay: 700.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  // Gender
                   _buildDropdownField(
-                    label: AppStrings.gender,
+                    label: 'Gender',
                     value: _selectedGender,
                     items: _genders,
                     onChanged: (value) {
@@ -286,20 +381,93 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         _selectedGender = value;
                       });
                     },
-                  ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 750.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  // Height & Weight Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Height',
+                          hint: '170',
+                          controller: _heightController,
+                          keyboardType: TextInputType.number,
+                          suffixIcon: Padding(
+                            padding: const EdgeInsets.all(AppSizes.paddingM),
+                            child: Text(
+                              'cm',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSizes.paddingM),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Weight',
+                          hint: '65',
+                          controller: _weightController,
+                          keyboardType: TextInputType.number,
+                          suffixIcon: Padding(
+                            padding: const EdgeInsets.all(AppSizes.paddingM),
+                            child: Text(
+                              'kg',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(duration: 500.ms, delay: 800.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  // Nationality
+                  CustomTextField(
+                    label: 'Nationality',
+                    hint: 'Morocco',
+                    controller: _countryController,
+                  ).animate().fadeIn(duration: 500.ms, delay: 850.ms),
 
                   const SizedBox(height: AppSizes.paddingXL),
 
-                  // Save button
+                  // Save Button
                   Consumer<UserProvider>(
                     builder: (context, userProvider, child) {
                       return CustomButton(
-                        text: userProvider.isLoading ? 'Saving...' : AppStrings.save,
+                        text: userProvider.isLoading
+                            ? 'Saving...'
+                            : (widget.isCreating ? 'Complete Profile' : 'Save Changes'),
                         onPressed: userProvider.isLoading ? () {} : _handleSave,
                         width: double.infinity,
                       );
                     },
-                  ).animate().fadeIn(duration: 500.ms, delay: 550.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 900.ms),
+
+                  if (!widget.isCreating) ...[
+                    const SizedBox(height: AppSizes.paddingM),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: AppSizes.paddingXL),
                 ],
@@ -311,31 +479,160 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Widget _buildSectionHeader(String title, IconData icon, Color color, {bool isRequired = false}) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        color: color.withAlpha((0.1 * 255).round()),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(
+          color: color.withAlpha((0.3 * 255).round()),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: AppSizes.paddingS),
+          Text(
+            title,
+            style: GoogleFonts.dmSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          if (isRequired) ...[
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingS,
+                vertical: AppSizes.paddingXS,
+              ),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              ),
+              child: Text(
+                'REQUIRED',
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextFieldWithIcon({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required IconData icon,
+    required Color iconColor,
+    String? helperText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: iconColor, size: 20),
+            const SizedBox(width: AppSizes.paddingS),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.paddingS),
+        TextFormField(
+          controller: controller,
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(
+              fontSize: 14,
+              color: AppColors.textMuted,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.all(AppSizes.paddingM),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderSide: BorderSide(color: AppColors.inputBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderSide: BorderSide(color: AppColors.inputBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderSide: BorderSide(color: iconColor, width: 2),
+            ),
+          ),
+        ),
+        if (helperText != null) ...[
+          const SizedBox(height: AppSizes.paddingXS),
+          Text(
+            helperText,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildDropdownField({
     required String label,
     required String? value,
     required List<String> items,
     required void Function(String?) onChanged,
+    IconData? icon,
+    Color? iconColor,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: AppSizes.paddingS, bottom: AppSizes.paddingS),
-          child: Text(
-            label,
-            style: GoogleFonts.montserrat(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+        Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: iconColor ?? AppColors.textSecondary, size: 20),
+              const SizedBox(width: AppSizes.paddingS),
+            ],
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
+          ],
         ),
+        const SizedBox(height: AppSizes.paddingS),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
           decoration: BoxDecoration(
-            color: AppColors.inputBackground,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            border: Border.all(color: AppColors.inputBorder),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -343,10 +640,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               isExpanded: true,
               hint: Text(
                 'Select $label',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
-                  color: AppColors.textSecondary.withAlpha((0.5 * 255).round()),
+                  color: AppColors.textMuted,
                 ),
               ),
               icon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
@@ -355,7 +652,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   value: item,
                   child: Text(
                     item,
-                    style: GoogleFonts.montserrat(
+                    style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
                       color: AppColors.textPrimary,

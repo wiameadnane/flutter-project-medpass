@@ -26,12 +26,12 @@ class AppTheme {
         ),
       ),
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.outfit(
+        displayLarge: GoogleFonts.dmSans(
           fontSize: 40,
           fontWeight: FontWeight.w600,
           color: AppColors.accent,
         ),
-        displayMedium: GoogleFonts.outfit(
+        displayMedium: GoogleFonts.dmSans(
           fontSize: 36,
           fontWeight: FontWeight.w600,
           color: AppColors.accent,
@@ -61,12 +61,12 @@ class AppTheme {
           fontWeight: FontWeight.w400,
           color: AppColors.textPrimary,
         ),
-        bodyMedium: GoogleFonts.montserrat(
+        bodyMedium: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: AppColors.textSecondary,
         ),
-        labelLarge: GoogleFonts.montserrat(
+        labelLarge: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
@@ -126,12 +126,12 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
-        labelStyle: GoogleFonts.montserrat(
+        labelStyle: GoogleFonts.inter(
           fontSize: 18,
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
         ),
-        hintStyle: GoogleFonts.montserrat(
+        hintStyle: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: Color.fromRGBO(127, 127, 127, 0.5),

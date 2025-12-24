@@ -15,6 +15,14 @@ class UserModel {
   final bool isPremium;
   final DateTime createdAt;
 
+  // Emergency & Critical Info
+  final String? emergencyContactName;
+  final String? emergencyContactPhone;
+  final String? emergencyContactRelation;
+  final List<String> allergies;
+  final List<String> medicalConditions;
+  final List<String> currentMedications;
+
   UserModel({
     required this.id,
     required this.fullName,
@@ -29,7 +37,30 @@ class UserModel {
     this.gender,
     this.isPremium = false,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    this.emergencyContactName,
+    this.emergencyContactPhone,
+    this.emergencyContactRelation,
+    List<String>? allergies,
+    List<String>? medicalConditions,
+    List<String>? currentMedications,
+  })  : createdAt = createdAt ?? DateTime.now(),
+        allergies = allergies ?? [],
+        medicalConditions = medicalConditions ?? [],
+        currentMedications = currentMedications ?? [];
+
+  // Check if user has critical info filled
+  bool get hasCriticalInfo =>
+      bloodType != null ||
+      allergies.isNotEmpty ||
+      emergencyContactPhone != null;
+
+  // Get allergies as formatted string
+  String get allergiesDisplay =>
+      allergies.isEmpty ? 'None' : allergies.join(', ');
+
+  // Get conditions as formatted string
+  String get conditionsDisplay =>
+      medicalConditions.isEmpty ? 'None' : medicalConditions.join(', ');
 
   int? get age {
     if (dateOfBirth == null) return null;
@@ -71,6 +102,12 @@ class UserModel {
     String? gender,
     bool? isPremium,
     DateTime? createdAt,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+    String? emergencyContactRelation,
+    List<String>? allergies,
+    List<String>? medicalConditions,
+    List<String>? currentMedications,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -86,6 +123,12 @@ class UserModel {
       gender: gender ?? this.gender,
       isPremium: isPremium ?? this.isPremium,
       createdAt: createdAt ?? this.createdAt,
+      emergencyContactName: emergencyContactName ?? this.emergencyContactName,
+      emergencyContactPhone: emergencyContactPhone ?? this.emergencyContactPhone,
+      emergencyContactRelation: emergencyContactRelation ?? this.emergencyContactRelation,
+      allergies: allergies ?? this.allergies,
+      medicalConditions: medicalConditions ?? this.medicalConditions,
+      currentMedications: currentMedications ?? this.currentMedications,
     );
   }
 
@@ -104,6 +147,12 @@ class UserModel {
       'gender': gender,
       'is_premium': isPremium,
       'created_at': Timestamp.fromDate(createdAt),
+      'emergency_contact_name': emergencyContactName,
+      'emergency_contact_phone': emergencyContactPhone,
+      'emergency_contact_relation': emergencyContactRelation,
+      'allergies': allergies,
+      'medical_conditions': medicalConditions,
+      'current_medications': currentMedications,
     };
   }
 
@@ -136,6 +185,13 @@ class UserModel {
     if (wVal is int) w = wVal.toDouble();
     else if (wVal is double) w = wVal;
 
+    // Parse list fields
+    List<String> parseStringList(dynamic value) {
+      if (value == null) return [];
+      if (value is List) return value.map((e) => e.toString()).toList();
+      return [];
+    }
+
     return UserModel(
       id: idVal as String,
       fullName: fullNameVal as String,
@@ -150,6 +206,12 @@ class UserModel {
       gender: (json['gender']) as String?,
       isPremium: (json['is_premium'] ?? json['isPremium']) as bool? ?? false,
       createdAt: created,
+      emergencyContactName: (json['emergency_contact_name'] ?? json['emergencyContactName']) as String?,
+      emergencyContactPhone: (json['emergency_contact_phone'] ?? json['emergencyContactPhone']) as String?,
+      emergencyContactRelation: (json['emergency_contact_relation'] ?? json['emergencyContactRelation']) as String?,
+      allergies: parseStringList(json['allergies']),
+      medicalConditions: parseStringList(json['medical_conditions'] ?? json['medicalConditions']),
+      currentMedications: parseStringList(json['current_medications'] ?? json['currentMedications']),
     );
   }
 
@@ -166,5 +228,11 @@ class UserModel {
         nationality: 'Moroccan',
         gender: 'Female',
         isPremium: false,
+        emergencyContactName: 'Ahmed Aqdora',
+        emergencyContactPhone: '+212 612 345 678',
+        emergencyContactRelation: 'Father',
+        allergies: ['Penicillin', 'Peanuts'],
+        medicalConditions: ['Asthma'],
+        currentMedications: ['Ventolin inhaler'],
       );
 }

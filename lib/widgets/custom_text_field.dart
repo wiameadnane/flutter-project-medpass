@@ -37,7 +37,7 @@ class CustomTextField extends StatelessWidget {
           padding: const EdgeInsets.only(left: AppSizes.paddingS, bottom: AppSizes.paddingS),
           child: Text(
             label,
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimary,
@@ -52,7 +52,7 @@ class CustomTextField extends StatelessWidget {
           onChanged: onChanged,
           readOnly: readOnly,
           onTap: onTap,
-          style: GoogleFonts.montserrat(
+          style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w400,
             color: AppColors.textPrimary,

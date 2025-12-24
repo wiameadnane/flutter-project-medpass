@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/user_model.dart';
 import '../models/medical_file_model.dart';
 
 class UserProvider with ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   UserModel? _user;
   List<MedicalFileModel> _medicalFiles = [];
   bool _isLoading = false;
@@ -14,7 +18,50 @@ class UserProvider with ChangeNotifier {
   List<MedicalFileModel> get medicalFiles => _medicalFiles;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isLoggedIn => _user != null;
+  bool get isLoggedIn => _user != null && _auth.currentUser != null;
+  User? get firebaseUser => _auth.currentUser;
+
+  // Initialize - check if user is already logged in
+  Future<void> initialize() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      await _loadUserData(currentUser.uid);
+    }
+  }
+
+  // Load user data from Firestore
+  Future<void> _loadUserData(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        _user = UserModel.fromJson({...doc.data()!, 'id': uid});
+        await _loadMedicalFiles(uid);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+    }
+  }
+
+  // Load medical files from Firestore
+  Future<void> _loadMedicalFiles(String uid) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('medical_files')
+          .orderBy('uploadedAt', descending: true)
+          .get();
+
+      _medicalFiles = snapshot.docs
+          .map((doc) => MedicalFileModel.fromJson({...doc.data(), 'id': doc.id}))
+          .toList();
+    } catch (e) {
+      // If no files exist yet, use empty list
+      _medicalFiles = [];
+      debugPrint('Error loading medical files: $e');
+    }
+  }
 
   // Auth methods
   Future<bool> login(String email, String password) async {
@@ -22,26 +69,71 @@ class UserProvider with ChangeNotifier {
     _clearError();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      // Authenticate with Firebase Auth
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
 
-      // For now, try to fetch user by email from Firestore
-      final userDoc = await FirebaseFirestore.instance
+      if (userCredential.user != null) {
+        await _loadUserData(userCredential.user!.uid);
+        _setLoading(false);
+        return true;
+      }
+
+      _setError('Login failed. Please try again.');
+      _setLoading(false);
+      return false;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
+
+      // Fallback for Windows/desktop where Firebase Auth may not work
+      if (e.code == 'unknown-error') {
+        return _fallbackLogin(email, password);
+      }
+
+      _setError(_getAuthErrorMessage(e.code));
+      _setLoading(false);
+      return false;
+    } catch (e) {
+      debugPrint('Login error: $e');
+
+      // Fallback for platforms where Firebase Auth is not supported
+      if (e.toString().contains('unknown-error') ||
+          e.toString().contains('internal error')) {
+        return _fallbackLogin(email, password);
+      }
+
+      _setError('Login failed: ${e.toString()}');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Fallback login for platforms where Firebase Auth doesn't work (Windows/Linux)
+  Future<bool> _fallbackLogin(String email, String password) async {
+    debugPrint('Using fallback login for desktop platform');
+    try {
+      // Try to find user in Firestore by email
+      final userDoc = await _firestore
           .collection('users')
-          .where('email', isEqualTo: email)
+          .where('email', isEqualTo: email.trim())
           .limit(1)
           .get();
 
       if (userDoc.docs.isNotEmpty) {
-        _user = UserModel.fromJson(userDoc.docs.first.data());
+        _user = UserModel.fromJson({...userDoc.docs.first.data(), 'id': userDoc.docs.first.id});
+        await _loadMedicalFiles(_user!.id);
+        _setLoading(false);
+        notifyListeners();
+        return true;
       } else {
-        // fallback to demo user if not found
-        _user = UserModel.demoUser.copyWith(email: email);
+        _setError('No account found with this email.');
+        _setLoading(false);
+        return false;
       }
-      _medicalFiles = MedicalFileModel.demoFiles;
-      _setLoading(false);
-      return true;
     } catch (e) {
+      debugPrint('Fallback login error: $e');
       _setError('Login failed. Please try again.');
       _setLoading(false);
       return false;
@@ -58,34 +150,159 @@ class UserProvider with ChangeNotifier {
     _clearError();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      // Create user in Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
 
-      // Create new user (and persist to Firestore)
-      final newId = FirebaseFirestore.instance.collection('users').doc().id;
+      if (userCredential.user != null) {
+        final uid = userCredential.user!.uid;
+
+        // Create user model
+        _user = UserModel(
+          id: uid,
+          fullName: fullName,
+          email: email.trim(),
+          phoneNumber: phoneNumber,
+          createdAt: DateTime.now(),
+        );
+
+        // Save to Firestore
+        await _firestore.collection('users').doc(uid).set(_user!.toJson());
+
+        // Update display name in Firebase Auth
+        await userCredential.user!.updateDisplayName(fullName);
+
+        _medicalFiles = [];
+        _setLoading(false);
+        return true;
+      }
+
+      _setError('Sign up failed. Please try again.');
+      _setLoading(false);
+      return false;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('FirebaseAuthException on signup: ${e.code} - ${e.message}');
+
+      // Fallback for Windows/desktop where Firebase Auth may not work
+      if (e.code == 'unknown-error') {
+        return _fallbackSignUp(fullName, email, phoneNumber);
+      }
+
+      _setError(_getAuthErrorMessage(e.code));
+      _setLoading(false);
+      return false;
+    } catch (e) {
+      debugPrint('SignUp error: $e');
+
+      // Fallback for platforms where Firebase Auth is not supported
+      if (e.toString().contains('unknown-error') ||
+          e.toString().contains('internal error')) {
+        return _fallbackSignUp(fullName, email, phoneNumber);
+      }
+
+      _setError('Sign up failed: ${e.toString()}');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Fallback signup for platforms where Firebase Auth doesn't work (Windows/Linux)
+  Future<bool> _fallbackSignUp(String fullName, String email, String phoneNumber) async {
+    debugPrint('Using fallback signup for desktop platform');
+    try {
+      // Check if user already exists
+      final existingUser = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email.trim())
+          .limit(1)
+          .get();
+
+      if (existingUser.docs.isNotEmpty) {
+        _setError('An account already exists with this email.');
+        _setLoading(false);
+        return false;
+      }
+
+      // Create new user in Firestore only
+      final newId = _firestore.collection('users').doc().id;
       _user = UserModel(
         id: newId,
         fullName: fullName,
-        email: email,
+        email: email.trim(),
         phoneNumber: phoneNumber,
         createdAt: DateTime.now(),
       );
 
-      await FirebaseFirestore.instance.collection('users').doc(newId).set(_user!.toJson());
+      await _firestore.collection('users').doc(newId).set(_user!.toJson());
       _medicalFiles = [];
       _setLoading(false);
+      notifyListeners();
       return true;
     } catch (e) {
+      debugPrint('Fallback signup error: $e');
       _setError('Sign up failed. Please try again.');
       _setLoading(false);
       return false;
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      debugPrint('Error signing out: $e');
+    }
     _user = null;
     _medicalFiles = [];
     notifyListeners();
+  }
+
+  // Password reset
+  Future<bool> resetPassword(String email) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      _setLoading(false);
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _setError(_getAuthErrorMessage(e.code));
+      _setLoading(false);
+      return false;
+    } catch (e) {
+      _setError('Failed to send reset email. Please try again.');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Get user-friendly error messages
+  String _getAuthErrorMessage(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'No account found with this email.';
+      case 'wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'email-already-in-use':
+        return 'An account already exists with this email.';
+      case 'weak-password':
+        return 'Password is too weak. Use at least 6 characters.';
+      case 'operation-not-allowed':
+        return 'This operation is not allowed.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'invalid-credential':
+        return 'Invalid email or password.';
+      default:
+        return 'An error occurred. Please try again.';
+    }
   }
 
   // Profile methods
@@ -98,6 +315,12 @@ class UserProvider with ChangeNotifier {
     double? weight,
     String? nationality,
     String? gender,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+    String? emergencyContactRelation,
+    List<String>? allergies,
+    List<String>? medicalConditions,
+    List<String>? currentMedications,
   }) async {
     if (_user == null) return false;
 
@@ -105,9 +328,6 @@ class UserProvider with ChangeNotifier {
     _clearError();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 500));
-
       _user = _user!.copyWith(
         fullName: fullName,
         phoneNumber: phoneNumber,
@@ -117,15 +337,27 @@ class UserProvider with ChangeNotifier {
         weight: weight,
         nationality: nationality,
         gender: gender,
+        emergencyContactName: emergencyContactName,
+        emergencyContactPhone: emergencyContactPhone,
+        emergencyContactRelation: emergencyContactRelation,
+        allergies: allergies,
+        medicalConditions: medicalConditions,
+        currentMedications: currentMedications,
       );
 
       // Persist the update to Firestore
-      await FirebaseFirestore.instance.collection('users').doc(_user!.id).update({
+      await _firestore.collection('users').doc(_user!.id).update({
         ..._user!.toJson(),
         'updated_at': FieldValue.serverTimestamp(),
       });
 
+      // Update display name if changed
+      if (fullName != null) {
+        await _auth.currentUser!.updateDisplayName(fullName);
+      }
+
       _setLoading(false);
+      notifyListeners();
       return true;
     } catch (e) {
       _setError('Update failed. Please try again.');
@@ -136,14 +368,31 @@ class UserProvider with ChangeNotifier {
 
   // Medical files methods
   Future<bool> addMedicalFile(MedicalFileModel file) async {
+    if (_user == null || _auth.currentUser == null) return false;
+
     _setLoading(true);
     _clearError();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Add to Firestore
+      final docRef = await _firestore
+          .collection('users')
+          .doc(_user!.id)
+          .collection('medical_files')
+          .add(file.toJson());
 
-      _medicalFiles.add(file);
+      // Add to local list with the generated ID
+      final newFile = MedicalFileModel(
+        id: docRef.id,
+        name: file.name,
+        category: file.category,
+        description: file.description,
+        fileUrl: file.fileUrl,
+        uploadedAt: file.uploadedAt,
+        isImportant: file.isImportant,
+      );
+      _medicalFiles.insert(0, newFile);
+
       _setLoading(false);
       notifyListeners();
       return true;
@@ -155,20 +404,56 @@ class UserProvider with ChangeNotifier {
   }
 
   Future<bool> removeMedicalFile(String fileId) async {
+    if (_user == null || _auth.currentUser == null) return false;
+
     _setLoading(true);
     _clearError();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Remove from Firestore
+      await _firestore
+          .collection('users')
+          .doc(_user!.id)
+          .collection('medical_files')
+          .doc(fileId)
+          .delete();
 
+      // Remove from local list
       _medicalFiles.removeWhere((file) => file.id == fileId);
+
       _setLoading(false);
       notifyListeners();
       return true;
     } catch (e) {
       _setError('Failed to remove file. Please try again.');
       _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> toggleFileImportant(String fileId) async {
+    if (_user == null || _auth.currentUser == null) return false;
+
+    try {
+      final fileIndex = _medicalFiles.indexWhere((f) => f.id == fileId);
+      if (fileIndex == -1) return false;
+
+      final file = _medicalFiles[fileIndex];
+      final newImportant = !file.isImportant;
+
+      // Update in Firestore
+      await _firestore
+          .collection('users')
+          .doc(_user!.id)
+          .collection('medical_files')
+          .doc(fileId)
+          .update({'isImportant': newImportant});
+
+      // Update local list
+      _medicalFiles[fileIndex] = file.copyWith(isImportant: newImportant);
+      notifyListeners();
+      return true;
+    } catch (e) {
       return false;
     }
   }
@@ -181,24 +466,57 @@ class UserProvider with ChangeNotifier {
     return _medicalFiles.where((file) => file.isImportant).toList();
   }
 
+  // Search files
+  List<MedicalFileModel> searchFiles(String query) {
+    if (query.isEmpty) return _medicalFiles;
+    final lowerQuery = query.toLowerCase();
+    return _medicalFiles.where((file) {
+      return file.name.toLowerCase().contains(lowerQuery) ||
+          (file.description?.toLowerCase().contains(lowerQuery) ?? false) ||
+          file.categoryName.toLowerCase().contains(lowerQuery);
+    }).toList();
+  }
+
   // Subscription methods
   Future<bool> upgradeToPremium() async {
-    if (_user == null) return false;
+    if (_user == null || _auth.currentUser == null) return false;
 
     _setLoading(true);
     _clearError();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
       _user = _user!.copyWith(isPremium: true);
+
+      // Update in Firestore
+      await _firestore.collection('users').doc(_user!.id).update({
+        'is_premium': true,
+        'premium_since': FieldValue.serverTimestamp(),
+      });
+
       _setLoading(false);
+      notifyListeners();
       return true;
     } catch (e) {
       _setError('Upgrade failed. Please try again.');
       _setLoading(false);
       return false;
+    }
+  }
+
+  // Refresh user data
+  Future<void> refreshUserData() async {
+    if (_auth.currentUser != null) {
+      await _loadUserData(_auth.currentUser!.uid);
+    }
+  }
+
+  // Refresh all data (user + files) - for pull-to-refresh
+  Future<void> refreshData() async {
+    if (_user != null) {
+      final uid = _auth.currentUser?.uid ?? _user!.id;
+      await _loadUserData(uid);
+      await _loadMedicalFiles(uid);
+      notifyListeners();
     }
   }
 
@@ -217,7 +535,7 @@ class UserProvider with ChangeNotifier {
     _error = null;
   }
 
-  // Demo login for quick testing
+  // Demo login for quick testing (development only)
   void loginWithDemoUser() {
     _user = UserModel.demoUser;
     _medicalFiles = MedicalFileModel.demoFiles;

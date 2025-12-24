@@ -60,7 +60,7 @@ class MyFilesScreen extends StatelessWidget {
                 // Title
                 Text(
                   AppStrings.myFiles,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.dmSans(
                     fontSize: 36,
                     fontWeight: FontWeight.w600,
                     color: AppColors.accent,

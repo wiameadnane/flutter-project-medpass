@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Center(
                     child: Text(
                       AppStrings.login,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.dmSans(
                         fontSize: 40,
                         fontWeight: FontWeight.w600,
                         color: AppColors.accent,
@@ -188,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         AppStrings.noAccount,
-                        style: GoogleFonts.montserrat(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textPrimary,
@@ -201,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: Text(
                           AppStrings.signUp,
-                          style: GoogleFonts.montserrat(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textDark,
