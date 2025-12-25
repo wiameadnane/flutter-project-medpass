@@ -822,18 +822,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFAB(BuildContext context) {
     return FloatingActionButton(
       onPressed: () {
-        // TODO: Navigate to add document screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Add document feature coming soon'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        Navigator.pushNamed(context, '/scanner');
       },
       backgroundColor: AppColors.accent,
       elevation: 8,
       child: const Icon(
-        Icons.add_rounded,
+        Icons.document_scanner_rounded,
         color: Colors.white,
         size: 28,
       ),
