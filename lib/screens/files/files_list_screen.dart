@@ -28,102 +28,127 @@ class _FilesListScreenState extends State<FilesListScreen> {
         child: RefreshIndicator(
           onRefresh: _onRefresh,
           color: AppColors.primary,
-          child: SingleChildScrollView(
+          child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-            padding: const EdgeInsets.all(AppSizes.paddingL),
-            child: Column(
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          color: AppColors.backgroundLight,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    // Logo
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      ),
-                      child: const Icon(
-                        Icons.medical_services_rounded,
-                        color: AppColors.primary,
-                        size: 30,
-                      ),
-                    ),
-                  ],
-                ).animate().fadeIn(duration: 500.ms),
-
-                const SizedBox(height: AppSizes.paddingXL),
-
-                // Title
-                Text(
-                  AppStrings.allFilesInOneSpace,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.accent,
-                  ),
-                ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-                const SizedBox(height: AppSizes.paddingXL),
-
-                // Files list
-                Consumer<UserProvider>(
-                  builder: (context, userProvider, child) {
-                    final files = userProvider.medicalFiles;
-                    final isPremium = userProvider.user?.isPremium ?? false;
-
-                    return Column(
+            padding: const EdgeInsets.all(0),
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.paddingL),
+                    child: Column(
                       children: [
-                        // File limit indicator for free users
-                        if (!isPremium) ...[
-                          FileLimitIndicator(
-                            currentCount: files.length,
-                            maxCount: PremiumFeatures.freeFileLimit,
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Back button
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 45,
+                                height: 45,
+                                decoration: BoxDecoration(
+                                  color: AppColors.backgroundLight,
+                                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                            // Logo
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundLight,
+                                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                              ),
+                              child: const Icon(
+                                Icons.medical_services_rounded,
+                                color: AppColors.primary,
+                                size: 30,
+                              ),
+                            ),
+                          ],
+                        ).animate().fadeIn(duration: 500.ms),
+
+                        const SizedBox(height: AppSizes.paddingXL),
+
+                        // Title
+                        Text(
+                          AppStrings.allFilesInOneSpace,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.accent,
                           ),
-                          const SizedBox(height: AppSizes.paddingL),
-                        ],
+                        ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
 
-                        if (files.isEmpty)
-                          _buildEmptyState()
-                        else
-                          ...FileCategory.values.map((category) {
-                            return _buildFileCard(
-                              context,
-                              category,
-                              userProvider.getFilesByCategory(category),
+                        const SizedBox(height: AppSizes.paddingXL),
+
+                        // Files list
+                        Consumer<UserProvider>(
+                          builder: (context, userProvider, child) {
+                            final files = userProvider.medicalFiles;
+                            final isPremium = userProvider.user?.isPremium ?? false;
+
+                            return Column(
+                              children: [
+                                // File limit indicator for free users
+                                if (!isPremium) ...[
+                                  FileLimitIndicator(
+                                    currentCount: files.length,
+                                    maxCount: PremiumFeatures.freeFileLimit,
+                                  ),
+                                  const SizedBox(height: AppSizes.paddingL),
+                                ],
+
+                                if (files.isEmpty)
+                                  _buildEmptyState()
+                                else
+                                  LayoutBuilder(builder: (ctx, box) {
+                                    final isWide = box.maxWidth > 800;
+                                    final cards = FileCategory.values
+                                        .map((category) => _buildFileCard(
+                                              context,
+                                              category,
+                                              userProvider.getFilesByCategory(category),
+                                            ))
+                                        .toList();
+
+                                    if (isWide) {
+                                      return GridView.count(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: AppSizes.paddingM,
+                                        mainAxisSpacing: AppSizes.paddingM,
+                                        childAspectRatio: 3.2,
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        children: cards,
+                                      );
+                                    }
+
+                                    return Column(children: cards);
+                                  }),
+                              ],
                             );
-                          }),
-                      ],
-                    );
-                  },
-                ),
+                          },
+                        ),
 
-                const SizedBox(height: AppSizes.paddingXL),
-              ],
-            ),
+                        const SizedBox(height: AppSizes.paddingXL),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
         ),
       ),
     );

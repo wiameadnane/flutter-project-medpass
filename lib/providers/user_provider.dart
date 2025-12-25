@@ -54,7 +54,9 @@ class UserProvider with ChangeNotifier {
           .get();
 
       _medicalFiles = snapshot.docs
-          .map((doc) => MedicalFileModel.fromJson({...doc.data(), 'id': doc.id}))
+          .map(
+            (doc) => MedicalFileModel.fromJson({...doc.data(), 'id': doc.id}),
+          )
           .toList();
     } catch (e) {
       // If no files exist yet, use empty list
@@ -88,7 +90,8 @@ class UserProvider with ChangeNotifier {
       debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
 
       // Fallback for Windows/desktop where Firebase Auth may not work
-      if (e.code == 'unknown-error') {
+      // treat configuration-not-found as a desktop config issue too
+      if (e.code == 'unknown-error' || e.code == 'configuration-not-found') {
         return _fallbackLogin(email, password);
       }
 
@@ -100,7 +103,8 @@ class UserProvider with ChangeNotifier {
 
       // Fallback for platforms where Firebase Auth is not supported
       if (e.toString().contains('unknown-error') ||
-          e.toString().contains('internal error')) {
+          e.toString().contains('internal error') ||
+          e.toString().contains('configuration-not-found')) {
         return _fallbackLogin(email, password);
       }
 
@@ -122,7 +126,10 @@ class UserProvider with ChangeNotifier {
           .get();
 
       if (userDoc.docs.isNotEmpty) {
-        _user = UserModel.fromJson({...userDoc.docs.first.data(), 'id': userDoc.docs.first.id});
+        _user = UserModel.fromJson({
+          ...userDoc.docs.first.data(),
+          'id': userDoc.docs.first.id,
+        });
         await _loadMedicalFiles(_user!.id);
         _setLoading(false);
         notifyListeners();
@@ -186,7 +193,7 @@ class UserProvider with ChangeNotifier {
       debugPrint('FirebaseAuthException on signup: ${e.code} - ${e.message}');
 
       // Fallback for Windows/desktop where Firebase Auth may not work
-      if (e.code == 'unknown-error') {
+      if (e.code == 'unknown-error' || e.code == 'configuration-not-found') {
         return _fallbackSignUp(fullName, email, phoneNumber);
       }
 
@@ -198,7 +205,8 @@ class UserProvider with ChangeNotifier {
 
       // Fallback for platforms where Firebase Auth is not supported
       if (e.toString().contains('unknown-error') ||
-          e.toString().contains('internal error')) {
+          e.toString().contains('internal error') ||
+          e.toString().contains('configuration-not-found')) {
         return _fallbackSignUp(fullName, email, phoneNumber);
       }
 
@@ -209,7 +217,11 @@ class UserProvider with ChangeNotifier {
   }
 
   // Fallback signup for platforms where Firebase Auth doesn't work (Windows/Linux)
-  Future<bool> _fallbackSignUp(String fullName, String email, String phoneNumber) async {
+  Future<bool> _fallbackSignUp(
+    String fullName,
+    String email,
+    String phoneNumber,
+  ) async {
     debugPrint('Using fallback signup for desktop platform');
     try {
       // Check if user already exists
@@ -368,7 +380,11 @@ class UserProvider with ChangeNotifier {
 
   // Medical files methods
   Future<bool> addMedicalFile(MedicalFileModel file) async {
-    if (_user == null || _auth.currentUser == null) return false;
+    // Allow operation if we have either a Firestore-backed _user (from fallback)
+    // or an authenticated Firebase user. Use whichever uid is available.
+    if (_user == null && _auth.currentUser == null) return false;
+
+    final uid = _auth.currentUser?.uid ?? _user!.id;
 
     _setLoading(true);
     _clearError();
@@ -377,7 +393,7 @@ class UserProvider with ChangeNotifier {
       // Add to Firestore
       final docRef = await _firestore
           .collection('users')
-          .doc(_user!.id)
+          .doc(uid)
           .collection('medical_files')
           .add(file.toJson());
 
@@ -397,6 +413,7 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      debugPrint('addMedicalFile error: $e');
       _setError('Failed to add file. Please try again.');
       _setLoading(false);
       return false;
@@ -404,7 +421,9 @@ class UserProvider with ChangeNotifier {
   }
 
   Future<bool> removeMedicalFile(String fileId) async {
-    if (_user == null || _auth.currentUser == null) return false;
+    if (_user == null && _auth.currentUser == null) return false;
+
+    final uid = _auth.currentUser?.uid ?? _user!.id;
 
     _setLoading(true);
     _clearError();
@@ -413,7 +432,7 @@ class UserProvider with ChangeNotifier {
       // Remove from Firestore
       await _firestore
           .collection('users')
-          .doc(_user!.id)
+          .doc(uid)
           .collection('medical_files')
           .doc(fileId)
           .delete();
@@ -425,6 +444,7 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      debugPrint('removeMedicalFile error: $e');
       _setError('Failed to remove file. Please try again.');
       _setLoading(false);
       return false;
@@ -432,7 +452,9 @@ class UserProvider with ChangeNotifier {
   }
 
   Future<bool> toggleFileImportant(String fileId) async {
-    if (_user == null || _auth.currentUser == null) return false;
+    if (_user == null && _auth.currentUser == null) return false;
+
+    final uid = _auth.currentUser?.uid ?? _user!.id;
 
     try {
       final fileIndex = _medicalFiles.indexWhere((f) => f.id == fileId);
@@ -444,7 +466,7 @@ class UserProvider with ChangeNotifier {
       // Update in Firestore
       await _firestore
           .collection('users')
-          .doc(_user!.id)
+          .doc(uid)
           .collection('medical_files')
           .doc(fileId)
           .update({'isImportant': newImportant});
@@ -454,6 +476,7 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      debugPrint('toggleFileImportant error: $e');
       return false;
     }
   }

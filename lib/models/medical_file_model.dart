@@ -72,6 +72,16 @@ class MedicalFileModel {
     };
   }
 
+  bool get isImage {
+    final url = (fileUrl ?? name).toLowerCase();
+    return url.endsWith('.png') ||
+        url.endsWith('.jpg') ||
+        url.endsWith('.jpeg') ||
+        url.endsWith('.gif') ||
+        url.endsWith('.webp') ||
+        url.endsWith('.bmp');
+  }
+
   factory MedicalFileModel.fromJson(Map<String, dynamic> json) {
     return MedicalFileModel(
       id: json['id'] as String,
@@ -86,33 +96,33 @@ class MedicalFileModel {
 
   // Demo files for testing
   static List<MedicalFileModel> get demoFiles => [
-        MedicalFileModel(
-          id: '1',
-          name: 'Allergy Report 2024',
-          category: FileCategory.allergyReport,
-          description: 'Annual allergy test results',
-          isImportant: true,
-        ),
-        MedicalFileModel(
-          id: '2',
-          name: 'Prescription - November 2024',
-          category: FileCategory.prescription,
-          description: 'Monthly medication prescription',
-        ),
-        MedicalFileModel(
-          id: '3',
-          name: 'Birth Certificate',
-          category: FileCategory.birthCertificate,
-          description: 'Official birth certificate',
-          isImportant: true,
-        ),
-        MedicalFileModel(
-          id: '4',
-          name: 'Blood Test Results',
-          category: FileCategory.medicalAnalysis,
-          description: 'Complete blood count analysis',
-        ),
-      ];
+    MedicalFileModel(
+      id: '1',
+      name: 'Allergy Report 2024',
+      category: FileCategory.allergyReport,
+      description: 'Annual allergy test results',
+      isImportant: true,
+    ),
+    MedicalFileModel(
+      id: '2',
+      name: 'Prescription - November 2024',
+      category: FileCategory.prescription,
+      description: 'Monthly medication prescription',
+    ),
+    MedicalFileModel(
+      id: '3',
+      name: 'Birth Certificate',
+      category: FileCategory.birthCertificate,
+      description: 'Official birth certificate',
+      isImportant: true,
+    ),
+    MedicalFileModel(
+      id: '4',
+      name: 'Blood Test Results',
+      category: FileCategory.medicalAnalysis,
+      description: 'Complete blood count analysis',
+    ),
+  ];
 }
 
 class EmergencyContact {
@@ -127,25 +137,17 @@ class EmergencyContact {
   });
 
   static List<EmergencyContact> get defaultContacts => [
-        const EmergencyContact(
-          name: 'SAMU',
-          number: '15',
-          iconPath: 'ambulance',
-        ),
-        const EmergencyContact(
-          name: 'Police',
-          number: '17',
-          iconPath: 'shield',
-        ),
-        const EmergencyContact(
-          name: 'Firefighters',
-          number: '18',
-          iconPath: 'fire',
-        ),
-        const EmergencyContact(
-          name: 'European Emergency',
-          number: '112',
-          iconPath: 'emergency',
-        ),
-      ];
+    const EmergencyContact(name: 'SAMU', number: '15', iconPath: 'ambulance'),
+    const EmergencyContact(name: 'Police', number: '17', iconPath: 'shield'),
+    const EmergencyContact(
+      name: 'Firefighters',
+      number: '18',
+      iconPath: 'fire',
+    ),
+    const EmergencyContact(
+      name: 'European Emergency',
+      number: '112',
+      iconPath: 'emergency',
+    ),
+  ];
 }

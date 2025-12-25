@@ -43,10 +43,10 @@ class UserModel {
     List<String>? allergies,
     List<String>? medicalConditions,
     List<String>? currentMedications,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        allergies = allergies ?? [],
-        medicalConditions = medicalConditions ?? [],
-        currentMedications = currentMedications ?? [];
+  }) : createdAt = createdAt ?? DateTime.now(),
+       allergies = allergies ?? [],
+       medicalConditions = medicalConditions ?? [],
+       currentMedications = currentMedications ?? [];
 
   // Check if user has critical info filled
   bool get hasCriticalInfo =>
@@ -124,8 +124,10 @@ class UserModel {
       isPremium: isPremium ?? this.isPremium,
       createdAt: createdAt ?? this.createdAt,
       emergencyContactName: emergencyContactName ?? this.emergencyContactName,
-      emergencyContactPhone: emergencyContactPhone ?? this.emergencyContactPhone,
-      emergencyContactRelation: emergencyContactRelation ?? this.emergencyContactRelation,
+      emergencyContactPhone:
+          emergencyContactPhone ?? this.emergencyContactPhone,
+      emergencyContactRelation:
+          emergencyContactRelation ?? this.emergencyContactRelation,
       allergies: allergies ?? this.allergies,
       medicalConditions: medicalConditions ?? this.medicalConditions,
       currentMedications: currentMedications ?? this.currentMedications,
@@ -139,7 +141,9 @@ class UserModel {
       'email': email,
       'phone_number': phoneNumber,
       'profile_image_url': profileImageUrl,
-      'date_of_birth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'date_of_birth': dateOfBirth != null
+          ? Timestamp.fromDate(dateOfBirth!)
+          : null,
       'blood_type': bloodType,
       'height': height,
       'weight': weight,
@@ -160,15 +164,21 @@ class UserModel {
     DateTime? dob;
     final dobVal = json['date_of_birth'] ?? json['dateOfBirth'];
     if (dobVal != null) {
-      if (dobVal is Timestamp) dob = dobVal.toDate();
-      else if (dobVal is String) dob = DateTime.tryParse(dobVal);
+      if (dobVal is Timestamp) {
+        dob = dobVal.toDate();
+      } else if (dobVal is String) {
+        dob = DateTime.tryParse(dobVal);
+      }
     }
 
     DateTime created = DateTime.now();
     final createdVal = json['created_at'] ?? json['createdAt'];
     if (createdVal != null) {
-      if (createdVal is Timestamp) created = createdVal.toDate();
-      else if (createdVal is String) created = DateTime.tryParse(createdVal) ?? created;
+      if (createdVal is Timestamp) {
+        created = createdVal.toDate();
+      } else if (createdVal is String) {
+        created = DateTime.tryParse(createdVal) ?? created;
+      }
     }
 
     String idVal = json['id'] ?? json['uid'] ?? (json['documentId'] ?? '');
@@ -177,13 +187,19 @@ class UserModel {
 
     double? h;
     final hVal = json['height'] ?? json['height_cm'];
-    if (hVal is int) h = hVal.toDouble();
-    else if (hVal is double) h = hVal;
+    if (hVal is int) {
+      h = hVal.toDouble();
+    } else if (hVal is double) {
+      h = hVal;
+    }
 
     double? w;
     final wVal = json['weight'] ?? json['weight_kg'];
-    if (wVal is int) w = wVal.toDouble();
-    else if (wVal is double) w = wVal;
+    if (wVal is int) {
+      w = wVal.toDouble();
+    } else if (wVal is double) {
+      w = wVal;
+    }
 
     // Parse list fields
     List<String> parseStringList(dynamic value) {
@@ -193,46 +209,59 @@ class UserModel {
     }
 
     return UserModel(
-      id: idVal as String,
-      fullName: fullNameVal as String,
-      email: emailVal as String,
+      id: idVal,
+      fullName: fullNameVal,
+      email: emailVal,
       phoneNumber: (json['phone_number'] ?? json['phoneNumber']) as String?,
-      profileImageUrl: (json['profile_image_url'] ?? json['profileImageUrl']) as String?,
+      profileImageUrl:
+          (json['profile_image_url'] ?? json['profileImageUrl']) as String?,
       dateOfBirth: dob,
       bloodType: (json['blood_type'] ?? json['bloodType']) as String?,
       height: h,
       weight: w,
-      nationality: (json['country_of_origin'] ?? json['nationality']) as String?,
+      nationality:
+          (json['country_of_origin'] ?? json['nationality']) as String?,
       gender: (json['gender']) as String?,
       isPremium: (json['is_premium'] ?? json['isPremium']) as bool? ?? false,
       createdAt: created,
-      emergencyContactName: (json['emergency_contact_name'] ?? json['emergencyContactName']) as String?,
-      emergencyContactPhone: (json['emergency_contact_phone'] ?? json['emergencyContactPhone']) as String?,
-      emergencyContactRelation: (json['emergency_contact_relation'] ?? json['emergencyContactRelation']) as String?,
+      emergencyContactName:
+          (json['emergency_contact_name'] ?? json['emergencyContactName'])
+              as String?,
+      emergencyContactPhone:
+          (json['emergency_contact_phone'] ?? json['emergencyContactPhone'])
+              as String?,
+      emergencyContactRelation:
+          (json['emergency_contact_relation'] ??
+                  json['emergencyContactRelation'])
+              as String?,
       allergies: parseStringList(json['allergies']),
-      medicalConditions: parseStringList(json['medical_conditions'] ?? json['medicalConditions']),
-      currentMedications: parseStringList(json['current_medications'] ?? json['currentMedications']),
+      medicalConditions: parseStringList(
+        json['medical_conditions'] ?? json['medicalConditions'],
+      ),
+      currentMedications: parseStringList(
+        json['current_medications'] ?? json['currentMedications'],
+      ),
     );
   }
 
   // Demo user for testing
   static UserModel get demoUser => UserModel(
-        id: '21101001',
-        fullName: 'Israa Aqdora',
-        email: 'israaaqdora@outlook.fr',
-        phoneNumber: '0693339086',
-        dateOfBirth: DateTime(2003, 11, 19),
-        bloodType: 'O+',
-        height: 157,
-        weight: 61,
-        nationality: 'Moroccan',
-        gender: 'Female',
-        isPremium: false,
-        emergencyContactName: 'Ahmed Aqdora',
-        emergencyContactPhone: '+212 612 345 678',
-        emergencyContactRelation: 'Father',
-        allergies: ['Penicillin', 'Peanuts'],
-        medicalConditions: ['Asthma'],
-        currentMedications: ['Ventolin inhaler'],
-      );
+    id: '21101001',
+    fullName: 'Israa Aqdora',
+    email: 'israaaqdora@outlook.fr',
+    phoneNumber: '0693339086',
+    dateOfBirth: DateTime(2003, 11, 19),
+    bloodType: 'O+',
+    height: 157,
+    weight: 61,
+    nationality: 'Moroccan',
+    gender: 'Female',
+    isPremium: false,
+    emergencyContactName: 'Ahmed Aqdora',
+    emergencyContactPhone: '+212 612 345 678',
+    emergencyContactRelation: 'Father',
+    allergies: ['Penicillin', 'Peanuts'],
+    medicalConditions: ['Asthma'],
+    currentMedications: ['Ventolin inhaler'],
+  );
 }
