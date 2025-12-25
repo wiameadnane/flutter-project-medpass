@@ -40,6 +40,16 @@ class MedicalFileModel {
     }
   }
 
+  bool get isImage {
+    final url = (fileUrl ?? name).toLowerCase();
+    return url.endsWith('.png') ||
+        url.endsWith('.jpg') ||
+        url.endsWith('.jpeg') ||
+        url.endsWith('.gif') ||
+        url.endsWith('.webp') ||
+        url.endsWith('.bmp');
+  }
+
   MedicalFileModel copyWith({
     String? id,
     String? name,

@@ -17,6 +17,7 @@ import 'screens/emergency/emergency_mode_screen.dart';
 import 'screens/files/file_viewer_screen.dart';
 import 'screens/files/files_list_screen.dart';
 import 'screens/files/my_files_screen.dart';
+import 'screens/files/upload_file_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/personal_card_screen.dart';
 import 'screens/home/qr_code_screen.dart';
@@ -44,13 +45,16 @@ void main() async {
   }
 
   // Initialize Firebase (skip if demo mode)
+  String? firebaseInitError;
   if (!isDemoMode) {
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-    } catch (e) {
+    } catch (e, st) {
+      firebaseInitError = '$e';
       debugPrint('Firebase initialization error: $e');
+      debugPrint(st.toString());
     }
   }
 
@@ -66,11 +70,13 @@ void main() async {
     ),
   );
 
-  runApp(const MedPassApp());
+  runApp(MedPassApp(firebaseInitError: firebaseInitError));
 }
 
 class MedPassApp extends StatelessWidget {
-  const MedPassApp({super.key});
+  final String? firebaseInitError;
+
+  const MedPassApp({super.key, this.firebaseInitError});
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +88,7 @@ class MedPassApp extends StatelessWidget {
         title: 'Med-Pass',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const AuthWrapper(),
+        home: AuthWrapper(firebaseInitError: firebaseInitError),
         onGenerateRoute: (settings) {
           switch (settings.name) {
             case '/':
@@ -105,6 +111,8 @@ class MedPassApp extends StatelessWidget {
               return _buildPageRoute(const EditProfileScreen(isCreating: true));
             case '/my-files':
               return _buildPageRoute(const MyFilesScreen());
+            case '/upload-file':
+              return _buildPageRoute(const UploadFileScreen());
             case '/files-list':
               return _buildPageRoute(const FilesListScreen());
             case '/file-viewer':
@@ -158,7 +166,9 @@ class MedPassApp extends StatelessWidget {
 
 /// Wrapper that handles authentication state and shows appropriate screen
 class AuthWrapper extends StatefulWidget {
-  const AuthWrapper({super.key});
+  final String? firebaseInitError;
+
+  const AuthWrapper({super.key, this.firebaseInitError});
 
   @override
   State<AuthWrapper> createState() => _AuthWrapperState();
@@ -186,6 +196,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.firebaseInitError != null && !isDemoMode) {
+      return FirebaseInitErrorScreen(message: widget.firebaseInitError!);
+    }
+
     if (_isInitializing) {
       return const SplashScreen();
     }
@@ -234,6 +248,44 @@ class SplashScreen extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Simple error screen shown when Firebase fails to initialize.
+class FirebaseInitErrorScreen extends StatelessWidget {
+  final String message;
+
+  const FirebaseInitErrorScreen({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.paddingL),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 80,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: AppSizes.paddingL),
+                Text(
+                  'Firebase initialization failed',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: AppSizes.paddingM),
+                Text(message, textAlign: TextAlign.center),
+              ],
+            ),
+          ),
         ),
       ),
     );

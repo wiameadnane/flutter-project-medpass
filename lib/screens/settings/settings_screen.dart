@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import '../../core/constants.dart';
-import '../../providers/user_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -60,7 +58,9 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: AppSizes.paddingL),
 
               // Preferences Section
-              _buildSectionHeader('Preferences').animate().fadeIn(duration: 300.ms, delay: 150.ms),
+              _buildSectionHeader(
+                'Preferences',
+              ).animate().fadeIn(duration: 300.ms, delay: 150.ms),
               const SizedBox(height: AppSizes.paddingS),
               _buildSettingsCard([
                 _SettingsTile(
@@ -104,7 +104,9 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: AppSizes.paddingL),
 
               // Privacy & Security Section
-              _buildSectionHeader('Privacy & Security').animate().fadeIn(duration: 300.ms, delay: 250.ms),
+              _buildSectionHeader(
+                'Privacy & Security',
+              ).animate().fadeIn(duration: 300.ms, delay: 250.ms),
               const SizedBox(height: AppSizes.paddingS),
               _buildSettingsCard([
                 _SettingsTile(
@@ -113,7 +115,7 @@ class SettingsScreen extends StatelessWidget {
                   trailing: Switch(
                     value: false,
                     onChanged: (value) => _showComingSoon(context),
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                   ),
                   onTap: () => _showComingSoon(context),
                 ),
@@ -132,7 +134,9 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: AppSizes.paddingL),
 
               // Notifications Section
-              _buildSectionHeader('Notifications').animate().fadeIn(duration: 300.ms, delay: 350.ms),
+              _buildSectionHeader(
+                'Notifications',
+              ).animate().fadeIn(duration: 300.ms, delay: 350.ms),
               const SizedBox(height: AppSizes.paddingS),
               _buildSettingsCard([
                 _SettingsTile(
@@ -141,7 +145,7 @@ class SettingsScreen extends StatelessWidget {
                   trailing: Switch(
                     value: true,
                     onChanged: (value) {},
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                   ),
                   onTap: () {},
                 ),
@@ -151,7 +155,7 @@ class SettingsScreen extends StatelessWidget {
                   trailing: Switch(
                     value: true,
                     onChanged: (value) {},
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                   ),
                   onTap: () {},
                 ),
@@ -161,7 +165,7 @@ class SettingsScreen extends StatelessWidget {
                   trailing: Switch(
                     value: false,
                     onChanged: (value) {},
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                   ),
                   onTap: () {},
                 ),
@@ -170,7 +174,9 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: AppSizes.paddingL),
 
               // About Section
-              _buildSectionHeader('About').animate().fadeIn(duration: 300.ms, delay: 450.ms),
+              _buildSectionHeader(
+                'About',
+              ).animate().fadeIn(duration: 300.ms, delay: 450.ms),
               const SizedBox(height: AppSizes.paddingS),
               _buildSettingsCard([
                 _SettingsTile(
@@ -200,9 +206,10 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: AppSizes.paddingL),
 
               // Danger Zone
-              _buildSectionHeader('Danger Zone', isDestructive: true)
-                  .animate()
-                  .fadeIn(duration: 300.ms, delay: 550.ms),
+              _buildSectionHeader(
+                'Danger Zone',
+                isDestructive: true,
+              ).animate().fadeIn(duration: 300.ms, delay: 550.ms),
               const SizedBox(height: AppSizes.paddingS),
               _buildSettingsCard([
                 _SettingsTile(
@@ -260,7 +267,9 @@ class SettingsScreen extends StatelessWidget {
                 Divider(
                   height: 1,
                   indent: 56,
-                  color: AppColors.inputBackground.withAlpha((0.5 * 255).round()),
+                  color: AppColors.inputBackground.withAlpha(
+                    (0.5 * 255).round(),
+                  ),
                 ),
             ],
           );
@@ -282,10 +291,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         title: Text(
           'Change Password',
-          style: GoogleFonts.dmSans(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          style: GoogleFonts.dmSans(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -331,9 +337,7 @@ class SettingsScreen extends StatelessWidget {
               Navigator.pop(context);
               AppSnackBar.showSuccess(context, 'Password changed successfully');
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('Change'),
           ),
         ],
@@ -350,10 +354,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         title: Text(
           'Select Language',
-          style: GoogleFonts.dmSans(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          style: GoogleFonts.dmSans(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -367,7 +368,11 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLanguageOption(BuildContext context, String language, bool isSelected) {
+  Widget _buildLanguageOption(
+    BuildContext context,
+    String language,
+    bool isSelected,
+  ) {
     return ListTile(
       title: Text(language),
       trailing: isSelected
@@ -375,7 +380,10 @@ class SettingsScreen extends StatelessWidget {
           : null,
       onTap: () {
         Navigator.pop(context);
-        AppSnackBar.show(context: context, message: 'Language set to $language');
+        AppSnackBar.show(
+          context: context,
+          message: 'Language set to $language',
+        );
       },
     );
   }
@@ -389,10 +397,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         title: Text(
           'Select Units',
-          style: GoogleFonts.dmSans(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          style: GoogleFonts.dmSans(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -421,10 +426,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         title: Text(
           'Select Theme',
-          style: GoogleFonts.dmSans(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          style: GoogleFonts.dmSans(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -471,7 +473,8 @@ class SettingsScreen extends StatelessWidget {
     if (confirmed && context.mounted) {
       AppSnackBar.show(
         context: context,
-        message: 'Account deletion requested. You will receive a confirmation email.',
+        message:
+            'Account deletion requested. You will receive a confirmation email.',
       );
     }
   }
@@ -501,11 +504,7 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: iconColor ?? AppColors.primary,
-        size: 24,
-      ),
+      leading: Icon(icon, color: iconColor ?? AppColors.primary, size: 24),
       title: Text(
         title,
         style: GoogleFonts.inter(
@@ -514,7 +513,8 @@ class _SettingsTile extends StatelessWidget {
           color: textColor ?? AppColors.textDark,
         ),
       ),
-      trailing: trailing ??
+      trailing:
+          trailing ??
           const Icon(
             Icons.arrow_forward_ios,
             color: AppColors.textSecondary,
