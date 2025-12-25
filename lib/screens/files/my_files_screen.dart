@@ -39,18 +39,10 @@ class MyFilesScreen extends StatelessWidget {
                       ),
                     ),
                     // Logo
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      ),
-                      child: const Icon(
-                        Icons.medical_services_rounded,
-                        color: AppColors.primary,
-                        size: 30,
-                      ),
+                    Image.asset(
+                      'assets/images/medpass_logo.png',
+                      height: 120,
+                      fit: BoxFit.contain,
                     ),
                   ],
                 ).animate().fadeIn(duration: 500.ms),
@@ -146,55 +138,63 @@ class MyFilesScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingL),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.inputBackground,
-                  borderRadius: BorderRadius.circular(2),
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: AppSizes.paddingL,
+              right: AppSizes.paddingL,
+              top: AppSizes.paddingL,
+              bottom: MediaQuery.of(context).viewInsets.bottom + AppSizes.paddingL,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.inputBackground,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSizes.paddingL),
-              Text(
-                'Upload Document',
-                style: GoogleFonts.dmSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
+                const SizedBox(height: AppSizes.paddingL),
+                Text(
+                  'Upload Document',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSizes.paddingL),
-              _buildUploadOption(
-                context,
-                Icons.camera_alt_rounded,
-                'Take Photo',
-                'Capture document with camera',
-              ),
-              const SizedBox(height: AppSizes.paddingM),
-              _buildUploadOption(
-                context,
-                Icons.photo_library_rounded,
-                'Choose from Gallery',
-                'Select image from your gallery',
-              ),
-              const SizedBox(height: AppSizes.paddingM),
-              _buildUploadOption(
-                context,
-                Icons.insert_drive_file_rounded,
-                'Upload PDF',
-                'Select PDF from your files',
-              ),
-              const SizedBox(height: AppSizes.paddingXL),
-            ],
+                const SizedBox(height: AppSizes.paddingL),
+                _buildUploadOption(
+                  context,
+                  Icons.camera_alt_rounded,
+                  'Take Photo',
+                  'Capture document with camera',
+                ),
+                const SizedBox(height: AppSizes.paddingM),
+                _buildUploadOption(
+                  context,
+                  Icons.photo_library_rounded,
+                  'Choose from Gallery',
+                  'Select image from your gallery',
+                ),
+                const SizedBox(height: AppSizes.paddingM),
+                _buildUploadOption(
+                  context,
+                  Icons.insert_drive_file_rounded,
+                  'Upload PDF',
+                  'Select PDF from your files',
+                ),
+                const SizedBox(height: AppSizes.paddingM),
+              ],
+            ),
           ),
         );
       },

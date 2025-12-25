@@ -45,25 +45,10 @@ class PersonalCardScreen extends StatelessWidget {
                       ),
                     ),
                     // Logo
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadow,
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.medical_services_rounded,
-                        color: AppColors.primary,
-                        size: 30,
-                      ),
+                    Image.asset(
+                      'assets/images/medpass_logo.png',
+                      height: 120,
+                      fit: BoxFit.contain,
                     ),
                   ],
                 ).animate().fadeIn(duration: 500.ms),
@@ -109,23 +94,10 @@ class PersonalCardScreen extends StatelessWidget {
                       Positioned(
                         top: AppSizes.paddingL,
                         left: AppSizes.paddingL,
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.medical_services_rounded,
-                              color: Colors.white,
-                              size: 30,
-                            ),
-                            const SizedBox(width: AppSizes.paddingS),
-                            Text(
-                              'Med-Pass',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                        child: Image.asset(
+                          'assets/images/medpass_logo.png',
+                          height: 50,
+                          fit: BoxFit.contain,
                         ),
                       ),
                       Positioned(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/constants.dart';
 import 'core/theme.dart';
@@ -28,16 +29,29 @@ import 'screens/settings/settings_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
+/// Check if demo mode is enabled via .env
+bool get isDemoMode => dotenv.env['DEMO_MODE']?.toLowerCase() == 'true';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  // Load environment variables
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await dotenv.load(fileName: '.env');
+    debugPrint('Demo mode: $isDemoMode');
   } catch (e) {
-    debugPrint('Firebase initialization error: $e');
+    debugPrint('Could not load .env file: $e');
+  }
+
+  // Initialize Firebase (skip if demo mode)
+  if (!isDemoMode) {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      debugPrint('Firebase initialization error: $e');
+    }
   }
 
   // Set system UI
@@ -200,18 +214,10 @@ class SplashScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // App logo
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppSizes.radiusL),
-              ),
-              child: const Icon(
-                Icons.medical_services_rounded,
-                color: Colors.white,
-                size: 60,
-              ),
+            Image.asset(
+              'assets/images/medpass_logo.png',
+              width: 280,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: AppSizes.paddingL),
             // App name

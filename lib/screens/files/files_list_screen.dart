@@ -56,18 +56,10 @@ class _FilesListScreenState extends State<FilesListScreen> {
                       ),
                     ),
                     // Logo
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      ),
-                      child: const Icon(
-                        Icons.medical_services_rounded,
-                        color: AppColors.primary,
-                        size: 30,
-                      ),
+                    Image.asset(
+                      'assets/images/medpass_logo.png',
+                      height: 120,
+                      fit: BoxFit.contain,
                     ),
                   ],
                 ).animate().fadeIn(duration: 500.ms),

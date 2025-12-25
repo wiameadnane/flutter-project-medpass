@@ -1,13 +1,28 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../models/user_model.dart';
 import '../models/medical_file_model.dart';
 
+/// Check if demo mode is enabled via .env
+bool get _isDemoMode => dotenv.env['DEMO_MODE']?.toLowerCase() == 'true';
+
 class UserProvider with ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Lazy initialization to avoid accessing Firebase when in demo mode
+  FirebaseAuth? _authInstance;
+  FirebaseFirestore? _firestoreInstance;
+
+  FirebaseAuth get _auth {
+    _authInstance ??= FirebaseAuth.instance;
+    return _authInstance!;
+  }
+
+  FirebaseFirestore get _firestore {
+    _firestoreInstance ??= FirebaseFirestore.instance;
+    return _firestoreInstance!;
+  }
 
   UserModel? _user;
   List<MedicalFileModel> _medicalFiles = [];
@@ -18,14 +33,27 @@ class UserProvider with ChangeNotifier {
   List<MedicalFileModel> get medicalFiles => _medicalFiles;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isLoggedIn => _user != null && _auth.currentUser != null;
-  User? get firebaseUser => _auth.currentUser;
+  bool get isLoggedIn {
+    if (_isDemoMode) return _user != null;
+    return _user != null && _auth.currentUser != null;
+  }
+  User? get firebaseUser => _isDemoMode ? null : _auth.currentUser;
 
   // Initialize - check if user is already logged in
   Future<void> initialize() async {
-    final currentUser = _auth.currentUser;
-    if (currentUser != null) {
-      await _loadUserData(currentUser.uid);
+    // In demo mode, don't check Firebase - just let user go to login screen
+    if (_isDemoMode) {
+      debugPrint('Demo mode - skipping Firebase auth check');
+      return;
+    }
+
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        await _loadUserData(currentUser.uid);
+      }
+    } catch (e) {
+      debugPrint('Error during initialization: $e');
     }
   }
 
@@ -67,6 +95,16 @@ class UserProvider with ChangeNotifier {
   Future<bool> login(String email, String password) async {
     _setLoading(true);
     _clearError();
+
+    // Demo mode - bypass Firebase authentication
+    if (_isDemoMode) {
+      debugPrint('Demo mode enabled - using demo user');
+      _user = UserModel.demoUser;
+      _medicalFiles = MedicalFileModel.demoFiles;
+      _setLoading(false);
+      notifyListeners();
+      return true;
+    }
 
     try {
       // Authenticate with Firebase Auth
@@ -148,6 +186,22 @@ class UserProvider with ChangeNotifier {
   }) async {
     _setLoading(true);
     _clearError();
+
+    // Demo mode - bypass Firebase authentication
+    if (_isDemoMode) {
+      debugPrint('Demo mode enabled - creating demo user');
+      _user = UserModel(
+        id: 'demo-user-${DateTime.now().millisecondsSinceEpoch}',
+        fullName: fullName,
+        email: email.trim(),
+        phoneNumber: phoneNumber,
+        createdAt: DateTime.now(),
+      );
+      _medicalFiles = [];
+      _setLoading(false);
+      notifyListeners();
+      return true;
+    }
 
     try {
       // Create user in Firebase Auth

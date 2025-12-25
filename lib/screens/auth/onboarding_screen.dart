@@ -60,69 +60,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           SafeArea(
             child: Column(
               children: [
-                // Logo area
-                Padding(
-                  padding: const EdgeInsets.all(AppSizes.paddingL),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.shadow,
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.medical_services_rounded,
-                          color: AppColors.primary,
-                          size: 30,
-                        ),
-                      ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.3),
-                      const SizedBox(width: AppSizes.paddingM),
-                      Text(
-                        'Med-Pass',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
-                    ],
-                  ),
-                ),
-
-                // Illustration placeholder
+                // Logo area - Big centered logo
                 Expanded(
                   flex: 3,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingXL),
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.health_and_safety_rounded,
-                            size: 120,
-                            color: AppColors.primary.withAlpha((0.7 * 255).round()),
-                          ),
-                          const SizedBox(height: AppSizes.paddingM),
-                          Icon(
-                            Icons.phone_android_rounded,
-                            size: 60,
-                            color: AppColors.accent.withAlpha((0.7 * 255).round()),
-                          ),
-                        ],
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSizes.paddingXL),
+                      child: Image.asset(
+                        'assets/images/medpass_logo.png',
+                        width: 280,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ).animate().fadeIn(duration: 800.ms, delay: 300.ms).scale(begin: const Offset(0.9, 0.9)),
@@ -135,7 +82,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   flex: 3,
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(AppSizes.paddingXL),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingL,
+                      vertical: AppSizes.paddingM,
+                    ),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
@@ -155,30 +105,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             },
                             itemCount: _pages.length,
                             itemBuilder: (context, index) {
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    _pages[index].title,
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primaryDark,
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingS),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        _pages[index].title,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primaryDark,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: AppSizes.paddingM),
-                                  Text(
-                                    _pages[index].description,
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w400,
-                                      color: AppColors.textSecondary,
-                                      height: 1.5,
+                                    const SizedBox(height: AppSizes.paddingS),
+                                    Flexible(
+                                      flex: 2,
+                                      child: Text(
+                                        _pages[index].description,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: AppColors.textSecondary,
+                                          height: 1.4,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               );
                             },
                           ),
@@ -204,7 +162,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: AppSizes.paddingXL),
+                        const SizedBox(height: AppSizes.paddingM),
 
                         // Buttons
                         Row(
@@ -228,6 +186,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ],
                         ).animate().fadeIn(duration: 600.ms, delay: 500.ms).slideY(begin: 0.3),
+
+                        const SizedBox(height: AppSizes.paddingS),
                       ],
                     ),
                   ).animate().slideY(begin: 0.3, duration: 600.ms, delay: 400.ms),

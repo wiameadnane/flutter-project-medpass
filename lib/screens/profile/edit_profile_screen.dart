@@ -196,24 +196,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   if (widget.isCreating) ...[
                     // Logo
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadow,
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.medical_services_rounded,
-                        color: AppColors.primary,
-                        size: 30,
+                    Center(
+                      child: Image.asset(
+                        'assets/images/medpass_logo.png',
+                        height: 120,
+                        fit: BoxFit.contain,
                       ),
                     ).animate().fadeIn(duration: 500.ms),
                     const SizedBox(height: AppSizes.paddingL),
@@ -494,16 +481,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(width: AppSizes.paddingS),
-          Text(
-            title,
-            style: GoogleFonts.dmSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: color,
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.dmSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (isRequired) ...[
-            const Spacer(),
+            const SizedBox(width: AppSizes.paddingS),
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSizes.paddingS,

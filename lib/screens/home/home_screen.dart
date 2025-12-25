@@ -118,70 +118,34 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        // App Logo & Name
-        Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: AppColors.primaryGradient,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(AppSizes.radiusS),
-              ),
-              child: const Icon(
-                Icons.medical_services_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: AppSizes.paddingS),
-            Text(
-              'Med-Pass',
-              style: GoogleFonts.dmSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textDark,
-              ),
-            ),
-          ],
+        // App Logo
+        Image.asset(
+          'assets/images/medpass_logo.png',
+          height: 120,
+          fit: BoxFit.contain,
         ),
-        // Profile button
+        // Emergency Mode button
         GestureDetector(
-          onTap: () => Navigator.pushNamed(context, '/profile'),
-          child: Consumer<UserProvider>(
-            builder: (context, userProvider, child) {
-              return Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha((0.3 * 255).round()),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+          onTap: () => Navigator.pushNamed(context, '/emergency-mode'),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.emergency,
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.emergency.withAlpha((0.3 * 255).round()),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                child: Center(
-                  child: Text(
-                    userProvider.user?.fullName.isNotEmpty == true
-                        ? userProvider.user!.fullName[0].toUpperCase()
-                        : 'U',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              );
-            },
+              ],
+            ),
+            child: const Icon(
+              Icons.emergency_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
         ),
       ],
@@ -343,12 +307,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       const Icon(Icons.phone_rounded, color: Colors.white, size: 16),
                       const SizedBox(width: AppSizes.paddingS),
-                      Text(
-                        'Emergency: ${user.emergencyContactName ?? ''} (${user.emergencyContactPhone})',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                      Expanded(
+                        child: Text(
+                          'Emergency: ${user.emergencyContactName ?? ''} (${user.emergencyContactPhone})',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -408,112 +376,68 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      children: [
-        // Show QR Code Button
-        Expanded(
-          flex: 2,
-          child: GestureDetector(
-            onTap: () => _showQuickQRCode(context),
-            child: Container(
-              padding: const EdgeInsets.all(AppSizes.paddingM),
+    return GestureDetector(
+      onTap: () => _showQuickQRCode(context),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                color: AppColors.primary.withAlpha((0.1 * 255).round()),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSizes.paddingS),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha((0.1 * 255).round()),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                    ),
-                    child: const Icon(
-                      Icons.qr_code_2_rounded,
-                      color: AppColors.primary,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: AppSizes.paddingM),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Show QR',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      Text(
-                        'Share your profile',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              child: const Icon(
+                Icons.qr_code_2_rounded,
+                color: AppColors.primary,
+                size: 28,
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: AppSizes.paddingM),
-        // Emergency Button
-        Expanded(
-          child: GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/emergency-mode'),
-            child: Container(
-              padding: const EdgeInsets.all(AppSizes.paddingM),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: AppColors.emergencyGradient,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.emergency.withAlpha((0.3 * 255).round()),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+            const SizedBox(width: AppSizes.paddingM),
+            Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.emergency_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  const SizedBox(height: AppSizes.paddingXS),
                   Text(
-                    'SOS',
+                    'Show QR Code',
                     style: GoogleFonts.dmSans(
-                      fontSize: 14,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  Text(
+                    'Share your health profile instantly',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -798,90 +722,93 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(AppSizes.paddingXL),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXL)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: AppSizes.paddingL),
-            Text(
-              'Your Health Pass',
-              style: GoogleFonts.dmSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textDark,
-              ),
-            ),
-            const SizedBox(height: AppSizes.paddingXL),
-            Container(
-              padding: const EdgeInsets.all(AppSizes.paddingL),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(AppSizes.radiusL),
-              ),
-              child: QrImageView(
-                data: user?.id ?? 'medpass-user',
-                version: QrVersions.auto,
-                size: 200,
-                backgroundColor: Colors.white,
-                eyeStyle: const QrEyeStyle(
-                  eyeShape: QrEyeShape.square,
-                  color: AppColors.primary,
-                ),
-                dataModuleStyle: const QrDataModuleStyle(
-                  dataModuleShape: QrDataModuleShape.square,
-                  color: AppColors.primary,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXL)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSizes.paddingL),
-            Text(
-              'Scan to view medical profile',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textSecondary,
+              const SizedBox(height: AppSizes.paddingM),
+              Text(
+                'Your Health Pass',
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSizes.paddingL),
-            GestureDetector(
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/qr-code');
-              },
-              child: Container(
-                width: double.infinity,
+              const SizedBox(height: AppSizes.paddingM),
+              Container(
                 padding: const EdgeInsets.all(AppSizes.paddingM),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: AppColors.backgroundLight,
                   borderRadius: BorderRadius.circular(AppSizes.radiusL),
                 ),
-                child: Center(
-                  child: Text(
-                    'View Full Screen',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                child: QrImageView(
+                  data: user?.id ?? 'medpass-user',
+                  version: QrVersions.auto,
+                  size: 160,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: AppColors.primary,
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingM),
+              Text(
+                'Scan to view medical profile',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingM),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/qr-code');
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSizes.paddingM),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'View Full Screen',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSizes.paddingM),
-          ],
+              const SizedBox(height: AppSizes.paddingS),
+            ],
+          ),
         ),
       ),
     );
@@ -958,6 +885,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: AppSizes.paddingXS),
                           Text(
@@ -967,6 +896,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.w400,
                               color: Colors.white.withAlpha((0.8 * 255).round()),
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       );
