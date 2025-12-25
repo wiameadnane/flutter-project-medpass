@@ -14,82 +14,59 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(AppSizes.paddingL),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          AppStrings.profile,
+          style: GoogleFonts.dmSans(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppSizes.paddingM),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/edit-profile'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingM,
+                  vertical: AppSizes.paddingS,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundGrey,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Back button
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          color: AppColors.backgroundLight,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    // Edit button
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/edit-profile');
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.paddingM,
-                          vertical: AppSizes.paddingS,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.backgroundGrey,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.edit, size: 16, color: AppColors.textDark),
-                            const SizedBox(width: 4),
-                            Text(
-                              AppStrings.edit,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textDark,
-                              ),
-                            ),
-                          ],
-                        ),
+                    const Icon(Icons.edit, size: 16, color: AppColors.textDark),
+                    const SizedBox(width: 4),
+                    Text(
+                      AppStrings.edit,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textDark,
                       ),
                     ),
                   ],
                 ),
-              ).animate().fadeIn(duration: 500.ms),
-
-              // Title
-              Text(
-                AppStrings.profile,
-                style: GoogleFonts.dmSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textDark,
-                ),
-              ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-              const SizedBox(height: AppSizes.paddingM),
-
-              // User info
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // User info
               Consumer<UserProvider>(
                 builder: (context, userProvider, child) {
                   final user = userProvider.user;
@@ -272,9 +249,8 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
 
-              const SizedBox(height: AppSizes.paddingXL),
-            ],
-          ),
+            const SizedBox(height: AppSizes.paddingXL),
+          ],
         ),
       ),
     );

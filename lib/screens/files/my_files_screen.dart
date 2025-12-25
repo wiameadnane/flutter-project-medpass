@@ -11,57 +11,29 @@ class MyFilesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSizes.paddingL),
-            child: Column(
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          color: AppColors.backgroundLight,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    // Logo
-                    Image.asset(
-                      'assets/images/medpass_logo.png',
-                      height: 120,
-                      fit: BoxFit.contain,
-                    ),
-                  ],
-                ).animate().fadeIn(duration: 500.ms),
-
-                const SizedBox(height: AppSizes.paddingXL),
-
-                // Title
-                Text(
-                  AppStrings.myFiles,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.accent,
-                  ),
-                ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-                const SizedBox(height: AppSizes.paddingXL),
-
-                // Menu cards
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          AppStrings.myFiles,
+          style: GoogleFonts.dmSans(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          child: Column(
+            children: [
+              // Menu cards
                 MenuCard(
                   title: AppStrings.viewFiles,
                   subtitle: 'Browse all your medical files',
@@ -126,8 +98,7 @@ class MyFilesScreen extends StatelessWidget {
                     ],
                   ),
                 ).animate().fadeIn(duration: 600.ms, delay: 500.ms).scale(begin: const Offset(0.9, 0.9)),
-              ],
-            ),
+            ],
           ),
         ),
       ),

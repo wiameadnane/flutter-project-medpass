@@ -15,82 +15,26 @@ class FileViewerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(AppSizes.paddingL),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Back button
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 45,
-                      height: 45,
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.primary,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                  // Logo
-                  Image.asset(
-                    'assets/images/medpass_logo.png',
-                    height: 120,
-                    fit: BoxFit.contain,
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 500.ms),
-
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
-              child: Text(
-                AppStrings.allFilesInOneSpace,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.accent,
-                ),
-              ),
-            ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-            const SizedBox(height: AppSizes.paddingM),
-
-            // Category title
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingL,
-                vertical: AppSizes.paddingS,
-              ),
-              decoration: BoxDecoration(
-                color: _getCategoryColor(category),
-                borderRadius: BorderRadius.circular(AppSizes.radiusL),
-              ),
-              child: Text(
-                _getCategoryName(category),
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
-
-            const SizedBox(height: AppSizes.paddingL),
-
-            // Document viewer
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          _getCategoryName(category),
+          style: GoogleFonts.dmSans(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          // Document viewer
             Expanded(
               child: Consumer<UserProvider>(
                 builder: (context, userProvider, child) {
@@ -102,8 +46,7 @@ class FileViewerScreen extends StatelessWidget {
                 },
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -273,21 +216,6 @@ class FileViewerScreen extends StatelessWidget {
         return AppStrings.medicalAnalysis;
       case FileCategory.other:
         return 'Other Documents';
-    }
-  }
-
-  Color _getCategoryColor(FileCategory category) {
-    switch (category) {
-      case FileCategory.allergyReport:
-        return AppColors.warning;
-      case FileCategory.prescription:
-        return AppColors.accent;
-      case FileCategory.birthCertificate:
-        return AppColors.primary;
-      case FileCategory.medicalAnalysis:
-        return AppColors.primaryLight;
-      case FileCategory.other:
-        return AppColors.textSecondary;
     }
   }
 }

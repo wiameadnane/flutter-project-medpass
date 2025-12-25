@@ -23,64 +23,29 @@ class EmergencyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSizes.paddingL),
-            child: Column(
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.shadow,
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    // Logo
-                    Image.asset(
-                      'assets/images/medpass_logo.png',
-                      height: 120,
-                      fit: BoxFit.contain,
-                    ),
-                  ],
-                ).animate().fadeIn(duration: 500.ms),
-
-                const SizedBox(height: AppSizes.paddingXL),
-
-                // Title
-                Text(
-                  AppStrings.emergencyGuide,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.accent,
-                  ),
-                ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-                const SizedBox(height: AppSizes.paddingXL),
-
-                // Emergency contacts
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          AppStrings.emergencyGuide,
+          style: GoogleFonts.dmSans(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          child: Column(
+            children: [
+              // Emergency contacts
                 _buildEmergencyCard(
                   context,
                   'SAMU',
@@ -169,8 +134,7 @@ class EmergencyScreen extends StatelessWidget {
                     ],
                   ),
                 ).animate().fadeIn(duration: 600.ms, delay: 600.ms).scale(begin: const Offset(0.95, 0.95)),
-              ],
-            ),
+            ],
           ),
         ),
       ),

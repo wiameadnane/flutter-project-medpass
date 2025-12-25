@@ -61,7 +61,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(AppSizes.paddingL),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.paddingL,
+              AppSizes.paddingS,
+              AppSizes.paddingL,
+              AppSizes.paddingL,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
