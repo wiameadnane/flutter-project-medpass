@@ -165,7 +165,7 @@ class ProfileScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppSizes.radiusL),
                     ),
                     child: QrImageView(
-                      data: user?.id ?? 'medpass-user',
+                      data: user?.emergencyQrData ?? 'No emergency data',
                       version: QrVersions.auto,
                       size: 200,
                       backgroundColor: Colors.white,

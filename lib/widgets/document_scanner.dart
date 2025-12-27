@@ -519,12 +519,12 @@ class _DocumentScannerState extends State<DocumentScanner> {
                                                                 lang)),
                                                         if (TranslationService
                                                             .isPremiumTargetLanguage(
-                                                                lang))
+                                                                lang, context))
                                                           const SizedBox(
                                                               width: 3),
                                                         if (TranslationService
                                                             .isPremiumTargetLanguage(
-                                                                lang))
+                                                                lang, context))
                                                           const Icon(
                                                             Icons.star,
                                                             color: Colors.amber,

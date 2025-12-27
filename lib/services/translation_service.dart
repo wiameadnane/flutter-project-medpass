@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
+import '../services/language_detection_service.dart';
 
 /// Translation service that handles premium/freemium restrictions
 class TranslationService {
@@ -16,29 +17,28 @@ class TranslationService {
     TranslateLanguage.arabic: 'Arabic',
   };
 
+  /// All supported languages
+  static const List<TranslateLanguage> allLanguages = [
+    TranslateLanguage.english,
+    TranslateLanguage.french,
+    TranslateLanguage.arabic,
+    TranslateLanguage.spanish,
+    TranslateLanguage.german,
+    TranslateLanguage.chinese,
+  ];
+
   /// Get available source languages for the current user
+  /// Free users: All languages (auto-detect works for any)
+  /// Premium users: All languages
   static List<TranslateLanguage> getAvailableSourceLanguages(
       BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final isPremium = userProvider.user?.isPremium ?? false;
-
-    if (isPremium) {
-      // Premium users can use all languages as source
-      return [
-        TranslateLanguage.french,
-        TranslateLanguage.english,
-        TranslateLanguage.spanish,
-        TranslateLanguage.chinese,
-        TranslateLanguage.german,
-        TranslateLanguage.arabic,
-      ];
-    } else {
-      // Freemium users can only use French as source (most common for medical docs)
-      return [TranslateLanguage.french];
-    }
+    // All users can have any source language (auto-detected)
+    return allLanguages;
   }
 
   /// Get available target languages for the current user
+  /// Free users: Preferred language + English (or French if preferred is English)
+  /// Premium users: All languages
   static List<TranslateLanguage> getAvailableTargetLanguages(
       BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -46,25 +46,34 @@ class TranslationService {
 
     if (isPremium) {
       // Premium users can translate to all languages
-      return [
-        TranslateLanguage.english,
-        TranslateLanguage.french,
-        TranslateLanguage.spanish,
-        TranslateLanguage.chinese,
-        TranslateLanguage.german,
-        TranslateLanguage.arabic,
-      ];
+      return allLanguages;
     } else {
-      // Freemium users can only translate to English and French
-      return [
-        TranslateLanguage.english,
-        TranslateLanguage.french,
-      ];
+      // Free users: preferred language + English (or French if preferred is English)
+      final preferredCode = userProvider.user?.preferredLanguage ?? 'en';
+      final preferredLang = LanguageDetectionService.codeToTranslateLanguage(preferredCode)
+          ?? TranslateLanguage.english;
+
+      final Set<TranslateLanguage> freeLanguages = {preferredLang};
+
+      // Add English as fallback (or French if preferred is English)
+      if (preferredLang == TranslateLanguage.english) {
+        freeLanguages.add(TranslateLanguage.french);
+      } else {
+        freeLanguages.add(TranslateLanguage.english);
+      }
+
+      return freeLanguages.toList();
     }
   }
 
-  /// Check if a language is premium-only for target translations
-  static bool isPremiumTargetLanguage(TranslateLanguage language) {
+  /// Check if a language is premium-only for target translations for this user
+  static bool isPremiumTargetLanguage(TranslateLanguage language, BuildContext context) {
+    final availableTargets = getAvailableTargetLanguages(context);
+    return !availableTargets.contains(language);
+  }
+
+  /// Legacy check - kept for compatibility
+  static bool isPremiumTargetLanguageLegacy(TranslateLanguage language) {
     return language == TranslateLanguage.spanish ||
         language == TranslateLanguage.chinese ||
         language == TranslateLanguage.german ||
@@ -80,24 +89,21 @@ class TranslationService {
   static Future<void> showUpgradeDialog(BuildContext context) async {
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Premium Feature'),
         content: const Text(
-          'Translation to Spanish, Chinese, German, and Arabic is available with Premium subscription. '
+          'Translation to additional languages is available with Premium subscription. '
           'Upgrade now to access all translation languages!',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              // TODO: Navigate to subscription/upgrade screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Upgrade feature coming soon!')),
-              );
+              Navigator.pop(dialogContext);
+              Navigator.pushNamed(context, '/billing');
             },
             child: const Text('Upgrade'),
           ),
@@ -147,11 +153,8 @@ class TranslationService {
     TranslateLanguage sourceLanguage,
     TranslateLanguage targetLanguage,
   ) async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final isPremium = userProvider.user?.isPremium ?? false;
-
     // Check if user is trying to use premium-only target language
-    if (!isPremium && isPremiumTargetLanguage(targetLanguage)) {
+    if (isPremiumTargetLanguage(targetLanguage, context)) {
       await showUpgradeDialog(context);
       throw Exception('Premium feature required');
     }

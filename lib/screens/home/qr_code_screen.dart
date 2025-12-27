@@ -124,6 +124,9 @@ class QrCodeScreen extends StatelessWidget {
                 Consumer<UserProvider>(
                   builder: (context, userProvider, child) {
                     final user = userProvider.user;
+                    final hasEmergencyData = user?.hasEmergencyQrData ?? false;
+                    final qrData = user?.emergencyQrData ?? 'No emergency data';
+
                     return Container(
                       padding: const EdgeInsets.all(AppSizes.paddingL),
                       decoration: BoxDecoration(
@@ -139,29 +142,85 @@ class QrCodeScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          QrImageView(
-                            data: 'medpass://${user?.id ?? 'user'}',
-                            version: QrVersions.auto,
-                            size: 220,
-                            backgroundColor: Colors.white,
-                            eyeStyle: const QrEyeStyle(
-                              eyeShape: QrEyeShape.square,
-                              color: AppColors.primary,
+                          if (hasEmergencyData) ...[
+                            QrImageView(
+                              data: qrData,
+                              version: QrVersions.auto,
+                              size: 220,
+                              backgroundColor: Colors.white,
+                              eyeStyle: const QrEyeStyle(
+                                eyeShape: QrEyeShape.square,
+                                color: AppColors.primary,
+                              ),
+                              dataModuleStyle: const QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.square,
+                                color: AppColors.primary,
+                              ),
                             ),
-                            dataModuleStyle: const QrDataModuleStyle(
-                              dataModuleShape: QrDataModuleShape.square,
-                              color: AppColors.primary,
+                            const SizedBox(height: AppSizes.paddingM),
+                            Text(
+                              'Scan for emergency info',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: AppSizes.paddingM),
-                          Text(
-                            'Scan to access health profile',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              color: AppColors.textSecondary,
+                            const SizedBox(height: AppSizes.paddingXS),
+                            Text(
+                              'Works offline with any QR scanner',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textSecondary.withOpacity(0.7),
+                              ),
                             ),
-                          ),
+                          ] else ...[
+                            Container(
+                              width: 220,
+                              height: 220,
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundLight,
+                                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                                border: Border.all(
+                                  color: AppColors.textSecondary.withOpacity(0.3),
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.qr_code_2,
+                                    size: 60,
+                                    color: AppColors.textSecondary.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: AppSizes.paddingM),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+                                    child: Text(
+                                      'Add emergency info to generate your QR code',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: AppSizes.paddingM),
+                            Text(
+                              'Complete your profile to enable',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ).animate().fadeIn(duration: 600.ms, delay: 300.ms).scale(begin: const Offset(0.9, 0.9));

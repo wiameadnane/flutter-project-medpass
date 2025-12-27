@@ -3,9 +3,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants.dart';
+import '../../models/medical_file_model.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../files/file_viewer_screen.dart';
 import '../ocr_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -147,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             child: const Icon(
-              Icons.emergency_rounded,
+              Icons.campaign_rounded,
               color: Colors.white,
               size: 24,
             ),
@@ -670,13 +673,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildRecentFileItem(BuildContext context, dynamic file) {
+  Widget _buildRecentFileItem(BuildContext context, MedicalFileModel file) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(
-        context,
-        '/file-viewer',
-        arguments: file.category,
-      ),
+      onTap: () => _openFile(context, file),
       child: Container(
         padding: const EdgeInsets.all(AppSizes.paddingM),
         decoration: BoxDecoration(
@@ -741,6 +740,110 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openFile(BuildContext context, MedicalFileModel file) {
+    // Image files: show in dialog
+    if (file.fileUrl != null && file.isImage) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(dialogContext).size.width * 0.95,
+              maxHeight: MediaQuery.of(dialogContext).size.height * 0.85,
+            ),
+            child: Stack(
+              children: [
+                InteractiveViewer(
+                  child: Image.network(file.fileUrl!, fit: BoxFit.contain),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white.withAlpha((0.9 * 255).round()),
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textDark),
+                      onPressed: () => Navigator.pop(dialogContext),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // PDF files: open in-app PDF viewer
+    if (file.fileUrl != null && file.isPdf) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PDFViewerScreen(
+            fileUrl: file.fileUrl!,
+            fileName: file.name,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Other files with URL: offer to open externally
+    if (file.fileUrl != null) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(file.name),
+          content: Text(file.description ?? 'Open this file in an external viewer.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                final uri = Uri.tryParse(file.fileUrl!);
+                if (uri == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Invalid file URL')),
+                  );
+                  return;
+                }
+                try {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to open file: $e')),
+                  );
+                }
+              },
+              child: const Text('Open'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // No URL: show info
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(file.name),
+        content: Text(file.description ?? 'No file available to preview.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showQuickQRCode(BuildContext context) {
     final user = context.read<UserProvider>().user;
     showModalBottomSheet(
@@ -784,7 +887,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(AppSizes.radiusL),
                 ),
                 child: QrImageView(
-                  data: user?.id ?? 'medpass-user',
+                  data: user?.emergencyQrData ?? 'No emergency data',
                   version: QrVersions.auto,
                   size: 160,
                   backgroundColor: Colors.white,
@@ -800,7 +903,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppSizes.paddingM),
               Text(
-                'Scan to view medical profile',
+                'Scan for emergency info',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -842,7 +945,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFAB(BuildContext context) {
     return FloatingActionButton(
-<<<<<<< HEAD
       onPressed: () => Navigator.push(
         context,
         MaterialPageRoute(
@@ -852,19 +954,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       backgroundColor: AppColors.accent,
       elevation: 8,
-      child: const Icon(Icons.document_scanner, color: Colors.white, size: 28),
-=======
-      onPressed: () {
-        Navigator.pushNamed(context, '/scanner');
-      },
-      backgroundColor: AppColors.accent,
-      elevation: 8,
-      child: const Icon(
-        Icons.document_scanner_rounded,
-        color: Colors.white,
-        size: 28,
-      ),
->>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
+      child: const Icon(Icons.document_scanner_rounded, color: Colors.white, size: 28),
     );
   }
 

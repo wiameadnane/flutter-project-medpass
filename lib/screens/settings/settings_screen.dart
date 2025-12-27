@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants.dart';
+import '../../models/user_model.dart';
+import '../../providers/user_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -9,6 +12,9 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = context.watch<UserProvider>();
+    final preferredLang = userProvider.user?.preferredLanguage ?? 'en';
+    final preferredLangDisplay = UserModel.supportedLanguages[preferredLang] ?? 'English';
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
@@ -28,9 +34,11 @@ class SettingsScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingL),
+      body: SafeArea(
+        top: false, // AppBar already handles the top
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.paddingL),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -65,15 +73,15 @@ class SettingsScreen extends StatelessWidget {
               _buildSettingsCard([
                 _SettingsTile(
                   icon: Icons.language,
-                  title: 'Language',
+                  title: 'Translation Language',
                   trailing: Text(
-                    'English',
+                    preferredLangDisplay,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  onTap: () => _showLanguageDialog(context),
+                  onTap: () => _showLanguageDialog(context, preferredLang),
                 ),
                 _SettingsTile(
                   icon: Icons.straighten,
@@ -225,6 +233,7 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
+        ),
       ),
     );
   }
@@ -345,23 +354,38 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showLanguageDialog(BuildContext context) {
+  void _showLanguageDialog(BuildContext context, String currentLang) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
         ),
         title: Text(
-          'Select Language',
+          'Translation Language',
           style: GoogleFonts.dmSans(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildLanguageOption(context, 'English', true),
-            _buildLanguageOption(context, 'French', false),
-            _buildLanguageOption(context, 'Arabic', false),
+            Text(
+              'Documents will be translated to this language',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSizes.paddingM),
+            ...UserModel.supportedLanguages.entries.map((entry) {
+              return _buildLanguageOption(
+                context,
+                dialogContext,
+                entry.key,
+                entry.value,
+                currentLang == entry.key,
+              );
+            }),
           ],
         ),
       ),
@@ -370,20 +394,39 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildLanguageOption(
     BuildContext context,
-    String language,
+    BuildContext dialogContext,
+    String langCode,
+    String langName,
     bool isSelected,
   ) {
     return ListTile(
-      title: Text(language),
+      leading: Icon(
+        Icons.translate_rounded,
+        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+        size: 20,
+      ),
+      title: Text(
+        langName,
+        style: GoogleFonts.inter(
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          color: isSelected ? AppColors.primary : AppColors.textDark,
+        ),
+      ),
       trailing: isSelected
           ? const Icon(Icons.check, color: AppColors.primary)
           : null,
-      onTap: () {
-        Navigator.pop(context);
-        AppSnackBar.show(
-          context: context,
-          message: 'Language set to $language',
-        );
+      onTap: () async {
+        Navigator.pop(dialogContext);
+        if (!isSelected) {
+          final userProvider = context.read<UserProvider>();
+          await userProvider.updateProfile(preferredLanguage: langCode);
+          if (context.mounted) {
+            AppSnackBar.showSuccess(
+              context,
+              'Language set to $langName',
+            );
+          }
+        }
       },
     );
   }

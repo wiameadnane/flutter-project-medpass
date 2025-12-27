@@ -82,7 +82,7 @@ class _EmergencyModeScreenState extends State<EmergencyModeScreen> {
               ),
               const SizedBox(height: AppSizes.paddingM),
               QrImageView(
-                data: 'medpass:${user.id}',
+                data: user.emergencyQrData,
                 version: QrVersions.auto,
                 size: 200,
                 backgroundColor: Colors.white,
@@ -97,10 +97,17 @@ class _EmergencyModeScreenState extends State<EmergencyModeScreen> {
               ),
               const SizedBox(height: AppSizes.paddingM),
               Text(
-                'Scan for medical info',
+                'Scan for emergency info',
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   color: AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                'Works offline',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textSecondary.withOpacity(0.7),
                 ),
               ),
               const SizedBox(height: AppSizes.paddingM),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../models/user_model.dart';
@@ -184,6 +185,10 @@ class UserProvider with ChangeNotifier {
     required String email,
     required String phoneNumber,
     required String password,
+    DateTime? dateOfBirth,
+    String? gender,
+    String? nationality,
+    String preferredLanguage = 'en',
   }) async {
     _setLoading(true);
     _clearError();
@@ -196,6 +201,10 @@ class UserProvider with ChangeNotifier {
         fullName: fullName,
         email: email.trim(),
         phoneNumber: phoneNumber,
+        dateOfBirth: dateOfBirth,
+        gender: gender,
+        nationality: nationality,
+        preferredLanguage: preferredLanguage,
         createdAt: DateTime.now(),
       );
       _medicalFiles = [];
@@ -220,6 +229,10 @@ class UserProvider with ChangeNotifier {
           fullName: fullName,
           email: email.trim(),
           phoneNumber: phoneNumber,
+          dateOfBirth: dateOfBirth,
+          gender: gender,
+          nationality: nationality,
+          preferredLanguage: preferredLanguage,
           createdAt: DateTime.now(),
         );
 
@@ -231,6 +244,7 @@ class UserProvider with ChangeNotifier {
 
         _medicalFiles = [];
         _setLoading(false);
+        notifyListeners();
         return true;
       }
 
@@ -242,7 +256,7 @@ class UserProvider with ChangeNotifier {
 
       // Fallback for Windows/desktop where Firebase Auth may not work
       if (e.code == 'unknown-error' || e.code == 'configuration-not-found') {
-        return _fallbackSignUp(fullName, email, phoneNumber);
+        return _fallbackSignUp(fullName, email, phoneNumber, dateOfBirth, gender, nationality, preferredLanguage);
       }
 
       _setError(_getAuthErrorMessage(e.code));
@@ -255,7 +269,7 @@ class UserProvider with ChangeNotifier {
       if (e.toString().contains('unknown-error') ||
           e.toString().contains('internal error') ||
           e.toString().contains('configuration-not-found')) {
-        return _fallbackSignUp(fullName, email, phoneNumber);
+        return _fallbackSignUp(fullName, email, phoneNumber, dateOfBirth, gender, nationality, preferredLanguage);
       }
 
       _setError('Sign up failed: ${e.toString()}');
@@ -265,7 +279,7 @@ class UserProvider with ChangeNotifier {
   }
 
   // Fallback signup for platforms where Firebase Auth doesn't work (Windows/Linux)
-  Future<bool> _fallbackSignUp(String fullName, String email, String phoneNumber) async {
+  Future<bool> _fallbackSignUp(String fullName, String email, String phoneNumber, DateTime? dateOfBirth, String? gender, String? nationality, String preferredLanguage) async {
     debugPrint('Using fallback signup for desktop platform');
     try {
       // Check if user already exists
@@ -288,6 +302,10 @@ class UserProvider with ChangeNotifier {
         fullName: fullName,
         email: email.trim(),
         phoneNumber: phoneNumber,
+        dateOfBirth: dateOfBirth,
+        gender: gender,
+        nationality: nationality,
+        preferredLanguage: preferredLanguage,
         createdAt: DateTime.now(),
       );
 
@@ -373,6 +391,7 @@ class UserProvider with ChangeNotifier {
     double? weight,
     String? nationality,
     String? gender,
+    String? preferredLanguage,
     String? emergencyContactName,
     String? emergencyContactPhone,
     String? emergencyContactRelation,
@@ -395,6 +414,7 @@ class UserProvider with ChangeNotifier {
         weight: weight,
         nationality: nationality,
         gender: gender,
+        preferredLanguage: preferredLanguage,
         emergencyContactName: emergencyContactName,
         emergencyContactPhone: emergencyContactPhone,
         emergencyContactRelation: emergencyContactRelation,
@@ -475,6 +495,25 @@ class UserProvider with ChangeNotifier {
     _clearError();
 
     try {
+      // Find the file to get its URL for storage deletion
+      final file = _medicalFiles.firstWhere(
+        (f) => f.id == fileId,
+        orElse: () => MedicalFileModel(id: '', name: '', category: FileCategory.other),
+      );
+
+      // Delete from Firebase Storage if file has a URL
+      if (file.fileUrl != null && file.fileUrl!.isNotEmpty) {
+        try {
+          // Extract the storage path from the URL
+          final ref = FirebaseStorage.instance.refFromURL(file.fileUrl!);
+          await ref.delete();
+          debugPrint('Deleted file from Storage: ${ref.fullPath}');
+        } catch (storageError) {
+          // Log but don't fail if storage deletion fails (file might not exist)
+          debugPrint('Storage deletion error (continuing): $storageError');
+        }
+      }
+
       // Remove from Firestore
       await _firestore
           .collection('users')
@@ -567,6 +606,31 @@ class UserProvider with ChangeNotifier {
       return true;
     } catch (e) {
       _setError('Upgrade failed. Please try again.');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> cancelPremium() async {
+    if (_user == null) return false;
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      _user = _user!.copyWith(isPremium: false);
+
+      // Update in Firestore
+      await _firestore.collection('users').doc(_user!.id).update({
+        'is_premium': false,
+        'premium_cancelled_at': FieldValue.serverTimestamp(),
+      });
+
+      _setLoading(false);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Cancellation failed. Please try again.');
       _setLoading(false);
       return false;
     }

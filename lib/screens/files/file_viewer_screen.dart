@@ -1,137 +1,72 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/constants.dart';
 import '../../models/medical_file_model.dart';
 import '../../providers/user_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class FileViewerScreen extends StatelessWidget {
-  final FileCategory category;
+  final FileCategory? category;
+  final bool showImportantOnly;
 
-  const FileViewerScreen({super.key, required this.category});
+  const FileViewerScreen({super.key, this.category, this.showImportantOnly = false});
 
   @override
   Widget build(BuildContext context) {
+    final String title = showImportantOnly
+        ? 'Important Files'
+        : (category != null ? _getCategoryName(category!) : 'All Documents');
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: LayoutBuilder(builder: (context, constraints) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 1000),
-              child: Column(
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.all(AppSizes.paddingL),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Back button
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: 45,
-                            height: 45,
-                            decoration: BoxDecoration(
-                              color: AppColors.backgroundLight,
-                              borderRadius:
-                                  BorderRadius.circular(AppSizes.radiusM),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                        // Logo
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundLight,
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusM),
-                          ),
-                          child: const Icon(
-                            Icons.medical_services_rounded,
-                            color: AppColors.primary,
-                            size: 30,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ).animate().fadeIn(duration: 500.ms),
-
-                  // Title
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingL,
-                    ),
-                    child: Text(
-                      AppStrings.allFilesInOneSpace,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  // Category title
-                  Container(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.paddingL),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingL,
-                      vertical: AppSizes.paddingS,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getCategoryColor(category),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                    ),
-                    child: Text(
-                      _getCategoryName(category),
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
-
-                  const SizedBox(height: AppSizes.paddingL),
-
-                  // Document viewer
-                  Expanded(
-                    child: Consumer<UserProvider>(
-                      builder: (context, userProvider, child) {
-                        final files = userProvider.getFilesByCategory(category);
-                        if (files.isEmpty) {
-                          return _buildEmptyState();
-                        }
-                        // Center the list on wide screens
-                        return Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 900),
-                            child: _buildFilesList(context, files),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+      backgroundColor: AppColors.backgroundLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showImportantOnly) ...[
+              const Icon(Icons.star_rounded, color: AppColors.warning, size: 24),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              title,
+              style: GoogleFonts.dmSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
               ),
             ),
-          );
-        }),
+          ],
+        ),
+        centerTitle: true,
+      ),
+      body: Consumer<UserProvider>(
+        builder: (context, userProvider, child) {
+          List<MedicalFileModel> files;
+          if (showImportantOnly) {
+            files = userProvider.importantFiles;
+          } else if (category != null) {
+            files = userProvider.getFilesByCategory(category!);
+          } else {
+            files = userProvider.medicalFiles;
+          }
+          if (files.isEmpty) {
+            return _buildEmptyState();
+          }
+          return _buildFilesList(context, files);
+        },
       ),
     );
   }
@@ -142,16 +77,78 @@ class FileViewerScreen extends StatelessWidget {
       itemCount: files.length,
       itemBuilder: (context, index) {
         final file = files[index];
-        return Card(
+        return Container(
           margin: const EdgeInsets.only(bottom: AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingM,
+              vertical: AppSizes.paddingS,
+            ),
             leading: _buildThumbnail(file),
             title: Text(
               file.name,
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
+              ),
             ),
-            subtitle: Text(file.description ?? '', style: GoogleFonts.inter()),
-            trailing: Icon(Icons.open_in_new_rounded),
+            subtitle: Text(
+              file.description ?? file.categoryName,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Star button to mark as important
+                IconButton(
+                  icon: Icon(
+                    file.isImportant ? Icons.star_rounded : Icons.star_outline_rounded,
+                    color: file.isImportant ? AppColors.warning : AppColors.textMuted,
+                    size: 24,
+                  ),
+                  onPressed: () {
+                    context.read<UserProvider>().toggleFileImportant(file.id);
+                  },
+                  tooltip: file.isImportant ? 'Remove from important' : 'Mark as important',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 4),
+                // Delete button
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.error,
+                    size: 22,
+                  ),
+                  onPressed: () => _showDeleteConfirmation(context, file),
+                  tooltip: 'Delete file',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.textSecondary,
+                  size: 16,
+                ),
+              ],
+            ),
             onTap: () => _openFilePreview(context, file),
           ),
         );
@@ -308,29 +305,163 @@ class FileViewerScreen extends StatelessWidget {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.insert_drive_file_outlined,
-            size: 80,
-            color: AppColors.textSecondary.withAlpha((0.5 * 255).round()),
-          ),
-          const SizedBox(height: AppSizes.paddingM),
-          Text(
-            'No files in this category',
-            style: GoogleFonts.dmSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingXL),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                showImportantOnly ? Icons.star_outline_rounded : Icons.folder_open_rounded,
+                size: 48,
+                color: showImportantOnly ? AppColors.warning : AppColors.textMuted,
+              ),
             ),
+            const SizedBox(height: AppSizes.paddingL),
+            Text(
+              showImportantOnly ? 'No important files' : 'No files yet',
+              style: GoogleFonts.dmSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: AppSizes.paddingS),
+            Text(
+              showImportantOnly
+                  ? 'Tap the star icon on any file\nto mark it as important'
+                  : 'Upload your first medical document\nto get started',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, MedicalFileModel file) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Delete File',
+                style: GoogleFonts.dmSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete this file?',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.insert_drive_file_outlined, color: AppColors.textSecondary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      file.name,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This action cannot be undone. The file will be permanently deleted from the cloud.',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+
+              final userProvider = context.read<UserProvider>();
+              final success = await userProvider.removeMedicalFile(file.id);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success ? 'File deleted successfully' : 'Failed to delete file',
+                    ),
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
-
-  // Removed unused document viewer helper to clean up analyzer warnings
 
   String _getCategoryName(FileCategory category) {
     switch (category) {
@@ -381,7 +512,45 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
   int? pages = 0;
   int? currentPage = 0;
   bool isReady = false;
+  bool isDownloading = true;
+  String? localFilePath;
   String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _downloadPdf();
+  }
+
+  Future<void> _downloadPdf() async {
+    try {
+      final response = await HttpClient().getUrl(Uri.parse(widget.fileUrl));
+      final httpResponse = await response.close();
+
+      if (httpResponse.statusCode != 200) {
+        throw Exception('Failed to download PDF: ${httpResponse.statusCode}');
+      }
+
+      final bytes = await consolidateHttpClientResponseBytes(httpResponse);
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/${widget.fileName}');
+      await tempFile.writeAsBytes(bytes);
+
+      if (mounted) {
+        setState(() {
+          localFilePath = tempFile.path;
+          isDownloading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          errorMessage = 'Failed to download PDF: $e';
+          isDownloading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -403,43 +572,54 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
       ),
       body: Stack(
         children: [
-          PDFView(
-            filePath: null,
-            defaultPage: currentPage!,
-            enableSwipe: true,
-            swipeHorizontal: true,
-            autoSpacing: false,
-            pageFling: false,
-            onRender: (_pages) {
-              setState(() {
-                pages = _pages;
-                isReady = true;
-              });
-            },
-            onError: (error) {
-              setState(() {
-                errorMessage = error.toString();
-              });
-              print(error.toString());
-            },
-            onPageError: (page, error) {
-              setState(() {
-                errorMessage = '$page: ${error.toString()}';
-              });
-              print('$page: ${error.toString()}');
-            },
-            onViewCreated: (PDFViewController pdfViewController) {
-              // You can use the controller to control the PDF view
-            },
-            onPageChanged: (int? page, int? total) {
-              setState(() {
-                currentPage = page;
-              });
-            },
-          ),
-          if (!isReady && errorMessage.isEmpty)
-            const Center(
-              child: CircularProgressIndicator(),
+          if (localFilePath != null)
+            PDFView(
+              filePath: localFilePath!,
+              defaultPage: currentPage!,
+              enableSwipe: true,
+              swipeHorizontal: true,
+              autoSpacing: false,
+              pageFling: false,
+              onRender: (_pages) {
+                setState(() {
+                  pages = _pages;
+                  isReady = true;
+                });
+              },
+              onError: (error) {
+                setState(() {
+                  errorMessage = error.toString();
+                });
+                debugPrint(error.toString());
+              },
+              onPageError: (page, error) {
+                setState(() {
+                  errorMessage = '$page: ${error.toString()}';
+                });
+                debugPrint('$page: ${error.toString()}');
+              },
+              onViewCreated: (PDFViewController pdfViewController) {
+                // You can use the controller to control the PDF view
+              },
+              onPageChanged: (int? page, int? total) {
+                setState(() {
+                  currentPage = page;
+                });
+              },
+            ),
+          if ((isDownloading || !isReady) && errorMessage.isEmpty)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    isDownloading ? 'Downloading PDF...' : 'Loading PDF...',
+                    style: GoogleFonts.inter(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
             ),
           if (errorMessage.isNotEmpty)
             Center(

@@ -34,7 +34,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Future<void> _handlePayment() async {
     if (!_formKey.currentState!.validate()) return;
+    await _processPayment();
+  }
 
+  // Demo payment - skips form validation
+  Future<void> _handleDemoPayment() async {
+    await _processPayment();
+  }
+
+  Future<void> _processPayment() async {
     final userProvider = context.read<UserProvider>();
     final success = await userProvider.upgradeToPremium();
 
@@ -219,11 +227,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                 const SizedBox(height: AppSizes.paddingXL),
 
-                // Pay button
+                // Pay button (skips validation for demo)
                 Consumer<UserProvider>(
                   builder: (context, userProvider, child) {
                     return GestureDetector(
-                      onTap: userProvider.isLoading ? null : _handlePayment,
+                      onTap: userProvider.isLoading ? null : _handleDemoPayment,
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(AppSizes.paddingM),

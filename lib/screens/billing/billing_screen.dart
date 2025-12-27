@@ -29,9 +29,11 @@ class BillingScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingL),
+      body: SafeArea(
+        top: false, // AppBar already handles the top
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.paddingL),
           child: Column(
             children: [
               // Free plan card
@@ -88,28 +90,98 @@ class BillingScreen extends StatelessWidget {
 
                 const SizedBox(height: AppSizes.paddingL),
 
-                // Subscribe button
+                // Subscribe / Cancel button
                 Consumer<UserProvider>(
                   builder: (context, userProvider, child) {
                     final isPremium = userProvider.user?.isPremium ?? false;
                     if (isPremium) {
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AppSizes.paddingM),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'You are a Premium member',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                      return Column(
+                        children: [
+                          // Premium status badge
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(AppSizes.paddingM),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.verified_rounded, color: Colors.white, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'You are a Premium member',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
+                          const SizedBox(height: AppSizes.paddingM),
+                          // Cancel subscription button
+                          GestureDetector(
+                            onTap: userProvider.isLoading ? null : () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Cancel Subscription?'),
+                                  content: const Text(
+                                    'You will lose access to premium features including:\n'
+                                    '• Unlimited storage\n'
+                                    '• All translation languages\n'
+                                    '• Offline mode\n'
+                                    '• Family profiles',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('Keep Premium'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                      child: const Text('Cancel Subscription'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                final success = await userProvider.cancelPremium();
+                                if (success && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Subscription cancelled'),
+                                      backgroundColor: AppColors.textSecondary,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(AppSizes.paddingM),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                                border: Border.all(color: Colors.red.shade300, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  userProvider.isLoading ? 'Processing...' : 'Cancel Subscription',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.red.shade400,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       );
                     }
                     return GestureDetector(
@@ -139,6 +211,7 @@ class BillingScreen extends StatelessWidget {
                 ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
             ],
           ),
+        ),
         ),
       ),
     );

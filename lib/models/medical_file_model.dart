@@ -41,18 +41,20 @@ class MedicalFileModel {
   }
 
   bool get isImage {
-    final url = (fileUrl ?? name).toLowerCase();
-    return url.endsWith('.png') ||
-        url.endsWith('.jpg') ||
-        url.endsWith('.jpeg') ||
-        url.endsWith('.gif') ||
-        url.endsWith('.webp') ||
-        url.endsWith('.bmp');
+    // Check both fileUrl and name, removing query parameters from URLs
+    final url = (fileUrl ?? '').toLowerCase().split('?').first;
+    final fileName = name.toLowerCase();
+
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'];
+    return imageExtensions.any((ext) => url.endsWith(ext) || fileName.endsWith(ext));
   }
 
   bool get isPdf {
-    final url = (fileUrl ?? name).toLowerCase();
-    return url.endsWith('.pdf');
+    // Check both fileUrl and name, removing query parameters from URLs
+    final url = (fileUrl ?? '').toLowerCase().split('?').first;
+    final fileName = name.toLowerCase();
+
+    return url.endsWith('.pdf') || fileName.endsWith('.pdf');
   }
 
   MedicalFileModel copyWith({

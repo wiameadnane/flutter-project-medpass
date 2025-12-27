@@ -19,23 +19,18 @@ import 'screens/billing/billing_screen.dart';
 import 'screens/billing/payment_screen.dart';
 import 'screens/emergency/emergency_screen.dart';
 import 'screens/emergency/emergency_mode_screen.dart';
-import 'screens/files/files_list_screen.dart'; // Contient FileViewerScreen
+import 'screens/files/file_viewer_screen.dart';
 import 'screens/files/my_files_screen.dart';
 import 'screens/files/upload_file_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/personal_card_screen.dart';
 import 'screens/home/qr_code_screen.dart';
 import 'screens/ocr_scan_screen.dart';
+import 'screens/profile/profile_screen.dart';
 import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/personal_info_screen.dart';
-import 'screens/profile/profile_screen.dart';
 import 'screens/search/search_screen.dart';
 import 'screens/settings/settings_screen.dart';
-<<<<<<< HEAD
-import 'widgets/document_scanner.dart';
-=======
-import 'screens/files/scanner_screen.dart';
->>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
 
 bool get isDemoMode => dotenv.env['DEMO_MODE']?.toLowerCase() == 'true';
 
@@ -79,6 +74,10 @@ class MedPassApp extends StatelessWidget {
             case '/login': return _buildPageRoute(const LoginScreen());
             case '/signup': return _buildPageRoute(const SignUpScreen());
             case '/home': return _buildPageRoute(const HomeScreen());
+            case '/profile': return _buildPageRoute(const ProfileScreen());
+            case '/personal-info': return _buildPageRoute(const PersonalInfoScreen());
+            case '/edit-profile': return _buildPageRoute(const EditProfileScreen());
+            case '/create-profile': return _buildPageRoute(const EditProfileScreen(isCreating: true));
             case '/my-files': return _buildPageRoute(const MyFilesScreen());
 
             case '/upload-file':
@@ -92,8 +91,7 @@ class MedPassApp extends StatelessWidget {
               return _buildPageRoute(const FileViewerScreen());
 
             case '/important-files':
-<<<<<<< HEAD
-              return _buildPageRoute(const FilesListScreen());
+              return _buildPageRoute(const FileViewerScreen(showImportantOnly: true));
             case '/qr-code':
               return _buildPageRoute(const QrCodeScreen());
             case '/emergency':
@@ -114,15 +112,6 @@ class MedPassApp extends StatelessWidget {
               return _buildPageRoute(const SearchScreen());
             default:
               return _buildPageRoute(const AuthWrapper());
-=======
-            // Même correction ici pour éviter l'erreur de signature
-              return _buildPageRoute(const FileViewerScreen());
-
-            case '/scanner': return _buildPageRoute(const ScannerScreen());
-            case '/qr-code': return _buildPageRoute(const QrCodeScreen());
-            case '/emergency': return _buildPageRoute(const EmergencyScreen());
-            default: return _buildPageRoute(const AuthWrapper());
->>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
           }
         },
       ),
@@ -164,7 +153,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     return context.watch<UserProvider>().isLoggedIn ? const HomeScreen() : const OnboardingScreen();
   }
-<<<<<<< HEAD
 }
 
 /// Splash screen shown while initializing
@@ -243,6 +231,3 @@ class FirebaseInitErrorScreen extends StatelessWidget {
     );
   }
 }
-=======
-}
->>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9

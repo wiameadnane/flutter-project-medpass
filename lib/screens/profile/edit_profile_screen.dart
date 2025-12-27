@@ -19,7 +19,7 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Personal Info Controllers
+  // Personal Info Controllers (only used when editing, not creating)
   late TextEditingController _dobController;
   late TextEditingController _heightController;
   late TextEditingController _weightController;
@@ -47,7 +47,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     final user = context.read<UserProvider>().user;
 
-    // Personal Info
+    // Personal Info (for edit mode)
     _dobController = TextEditingController(text: user?.formattedDateOfBirth ?? '');
     _heightController = TextEditingController(
       text: user?.height != null ? user!.height!.toInt().toString() : '',
@@ -129,25 +129,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validate critical info for new profiles
-    if (widget.isCreating && _selectedBloodType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select your blood type - this is critical for emergencies'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
     final userProvider = context.read<UserProvider>();
+
+    // Build update params based on mode
     final success = await userProvider.updateProfile(
-      dateOfBirth: _selectedDate,
+      // Only update personal info if editing (not creating - those are from signup)
+      dateOfBirth: widget.isCreating ? null : _selectedDate,
+      gender: widget.isCreating ? null : _selectedGender,
+      nationality: widget.isCreating ? null : (_countryController.text.trim().isNotEmpty ? _countryController.text.trim() : null),
+      // Always update these
       bloodType: _selectedBloodType,
       height: double.tryParse(_heightController.text),
       weight: double.tryParse(_weightController.text),
-      nationality: _countryController.text.trim(),
-      gender: _selectedGender,
       emergencyContactName: _emergencyNameController.text.trim(),
       emergencyContactPhone: _emergencyPhoneController.text.trim(),
       emergencyContactRelation: _emergencyRelationController.text.trim(),
@@ -163,12 +156,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         Navigator.pop(context);
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully'),
+        SnackBar(
+          content: Text(widget.isCreating ? 'Profile created successfully' : 'Profile updated successfully'),
           backgroundColor: AppColors.success,
         ),
       );
     }
+  }
+
+  void _handleSkip() {
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
   }
 
   @override
@@ -184,6 +181,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 icon: const Icon(Icons.arrow_back_ios, color: AppColors.textDark),
                 onPressed: () => Navigator.pop(context),
               ),
+              title: Text(
+                'Edit Profile',
+                style: GoogleFonts.dmSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+              ),
+              centerTitle: true,
             ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -200,34 +206,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (widget.isCreating) ...[
-                    // Logo
+                    // Logo for create mode
                     Center(
                       child: Image.asset(
                         'assets/images/medpass_logo.png',
-                        height: 120,
+                        height: 100,
                         fit: BoxFit.contain,
                       ),
                     ).animate().fadeIn(duration: 500.ms),
-                    const SizedBox(height: AppSizes.paddingL),
-                  ],
+                    const SizedBox(height: AppSizes.paddingM),
 
-                  // Title
-                  Center(
-                    child: Text(
-                      widget.isCreating ? 'Complete Your Profile' : 'Edit Profile',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-                  if (widget.isCreating) ...[
-                    const SizedBox(height: AppSizes.paddingS),
+                    // Title
                     Center(
                       child: Text(
-                        'This information helps medical professionals in emergencies',
+                        'Medical Information',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                    ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
+
+                    const SizedBox(height: AppSizes.paddingS),
+
+                    Center(
+                      child: Text(
+                        'This information helps medical professionals\nin case of emergencies',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           fontSize: 14,
@@ -236,25 +241,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ),
                     ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
+
+                    const SizedBox(height: AppSizes.paddingS),
+
+                    // Optional notice
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.paddingM,
+                          vertical: AppSizes.paddingS,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.info.withAlpha((0.1 * 255).round()),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: Text(
+                          'All fields are optional - you can fill them later',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.info,
+                          ),
+                        ),
+                      ),
+                    ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
+
+                    const SizedBox(height: AppSizes.paddingL),
                   ],
 
-                  const SizedBox(height: AppSizes.paddingXL),
-
                   // ==========================================
-                  // CRITICAL MEDICAL INFO (Priority Section)
+                  // CRITICAL MEDICAL INFO
                   // ==========================================
                   _buildSectionHeader(
                     'Critical Medical Info',
                     Icons.emergency_rounded,
                     AppColors.emergency,
-                    isRequired: true,
-                  ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
-                  // Blood Type (Required)
+                  // Blood Type
                   _buildDropdownField(
-                    label: 'Blood Type *',
+                    label: 'Blood Type',
                     value: _selectedBloodType,
                     items: _bloodTypes,
                     icon: Icons.bloodtype_rounded,
@@ -264,7 +292,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         _selectedBloodType = value;
                       });
                     },
-                  ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
@@ -276,7 +304,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     icon: Icons.warning_amber_rounded,
                     iconColor: AppColors.allergy,
                     helperText: 'Separate multiple allergies with commas',
-                  ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 350.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
@@ -288,7 +316,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     icon: Icons.medical_information_rounded,
                     iconColor: AppColors.primary,
                     helperText: 'Separate multiple conditions with commas',
-                  ).animate().fadeIn(duration: 500.ms, delay: 350.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
@@ -300,80 +328,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     icon: Icons.medication_rounded,
                     iconColor: AppColors.medication,
                     helperText: 'Separate multiple medications with commas',
-                  ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
-
-                  const SizedBox(height: AppSizes.paddingXL),
-
-                  // ==========================================
-                  // EMERGENCY CONTACT
-                  // ==========================================
-                  _buildSectionHeader(
-                    'Emergency Contact',
-                    Icons.contact_phone_rounded,
-                    AppColors.accent,
                   ).animate().fadeIn(duration: 500.ms, delay: 450.ms),
 
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  CustomTextField(
-                    label: 'Contact Name',
-                    hint: 'John Doe',
-                    controller: _emergencyNameController,
-                  ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  CustomTextField(
-                    label: 'Contact Phone',
-                    hint: '+1 234 567 8900',
-                    controller: _emergencyPhoneController,
-                    keyboardType: TextInputType.phone,
-                  ).animate().fadeIn(duration: 500.ms, delay: 550.ms),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  CustomTextField(
-                    label: 'Relationship',
-                    hint: 'e.g., Spouse, Parent, Sibling',
-                    controller: _emergencyRelationController,
-                  ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
-
                   const SizedBox(height: AppSizes.paddingXL),
 
                   // ==========================================
-                  // PERSONAL INFO
+                  // PHYSICAL INFO (Height/Weight)
                   // ==========================================
                   _buildSectionHeader(
-                    'Personal Information',
-                    Icons.person_rounded,
-                    AppColors.primary,
-                  ).animate().fadeIn(duration: 500.ms, delay: 650.ms),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  // Date of Birth
-                  CustomTextField(
-                    label: 'Date of Birth',
-                    hint: 'DD/MM/YYYY',
-                    controller: _dobController,
-                    readOnly: true,
-                    onTap: _selectDate,
-                    suffixIcon: const Icon(Icons.calendar_today, color: AppColors.textSecondary),
-                  ).animate().fadeIn(duration: 500.ms, delay: 700.ms),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  // Gender
-                  _buildDropdownField(
-                    label: 'Gender',
-                    value: _selectedGender,
-                    items: _genders,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedGender = value;
-                      });
-                    },
-                  ).animate().fadeIn(duration: 500.ms, delay: 750.ms),
+                    'Physical Information',
+                    Icons.straighten_rounded,
+                    AppColors.accent,
+                  ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
@@ -418,16 +384,91 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ),
                     ],
-                  ).animate().fadeIn(duration: 500.ms, delay: 800.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 550.ms),
+
+                  const SizedBox(height: AppSizes.paddingXL),
+
+                  // ==========================================
+                  // EMERGENCY CONTACT
+                  // ==========================================
+                  _buildSectionHeader(
+                    'Emergency Contact',
+                    Icons.contact_phone_rounded,
+                    AppColors.primary,
+                  ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
 
                   const SizedBox(height: AppSizes.paddingM),
 
-                  // Nationality
                   CustomTextField(
-                    label: 'Nationality',
-                    hint: 'Morocco',
-                    controller: _countryController,
-                  ).animate().fadeIn(duration: 500.ms, delay: 850.ms),
+                    label: 'Contact Name',
+                    hint: 'John Doe',
+                    controller: _emergencyNameController,
+                  ).animate().fadeIn(duration: 500.ms, delay: 650.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  CustomTextField(
+                    label: 'Contact Phone',
+                    hint: '+1 234 567 8900',
+                    controller: _emergencyPhoneController,
+                    keyboardType: TextInputType.phone,
+                  ).animate().fadeIn(duration: 500.ms, delay: 700.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  CustomTextField(
+                    label: 'Relationship',
+                    hint: 'e.g., Spouse, Parent, Sibling',
+                    controller: _emergencyRelationController,
+                  ).animate().fadeIn(duration: 500.ms, delay: 750.ms),
+
+                  // ==========================================
+                  // PERSONAL INFO (Only show when EDITING, not creating)
+                  // ==========================================
+                  if (!widget.isCreating) ...[
+                    const SizedBox(height: AppSizes.paddingXL),
+
+                    _buildSectionHeader(
+                      'Personal Information',
+                      Icons.person_rounded,
+                      AppColors.info,
+                    ).animate().fadeIn(duration: 500.ms, delay: 800.ms),
+
+                    const SizedBox(height: AppSizes.paddingM),
+
+                    // Date of Birth
+                    CustomTextField(
+                      label: 'Date of Birth',
+                      hint: 'DD/MM/YYYY',
+                      controller: _dobController,
+                      readOnly: true,
+                      onTap: _selectDate,
+                      suffixIcon: const Icon(Icons.calendar_today, color: AppColors.textSecondary),
+                    ).animate().fadeIn(duration: 500.ms, delay: 850.ms),
+
+                    const SizedBox(height: AppSizes.paddingM),
+
+                    // Gender
+                    _buildDropdownField(
+                      label: 'Gender',
+                      value: _selectedGender,
+                      items: _genders,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedGender = value;
+                        });
+                      },
+                    ).animate().fadeIn(duration: 500.ms, delay: 900.ms),
+
+                    const SizedBox(height: AppSizes.paddingM),
+
+                    // Nationality
+                    CustomTextField(
+                      label: 'Nationality',
+                      hint: 'e.g., Morocco, France, USA',
+                      controller: _countryController,
+                    ).animate().fadeIn(duration: 500.ms, delay: 950.ms),
+                  ],
 
                   const SizedBox(height: AppSizes.paddingXL),
 
@@ -442,7 +483,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         width: double.infinity,
                       );
                     },
-                  ).animate().fadeIn(duration: 500.ms, delay: 900.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 800.ms),
+
+                  // Skip button for create mode
+                  if (widget.isCreating) ...[
+                    const SizedBox(height: AppSizes.paddingM),
+                    Center(
+                      child: TextButton(
+                        onPressed: _handleSkip,
+                        child: Text(
+                          'Skip for now',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ).animate().fadeIn(duration: 500.ms, delay: 850.ms),
+                  ],
 
                   if (!widget.isCreating) ...[
                     const SizedBox(height: AppSizes.paddingM),
@@ -471,7 +530,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon, Color color, {bool isRequired = false}) {
+  Widget _buildSectionHeader(String title, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
@@ -486,39 +545,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(width: AppSizes.paddingS),
-          Expanded(
-            child: Text(
-              title,
-              style: GoogleFonts.dmSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Text(
+            title,
+            style: GoogleFonts.dmSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
-          if (isRequired) ...[
-            const SizedBox(width: AppSizes.paddingS),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingS,
-                vertical: AppSizes.paddingXS,
-              ),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(AppSizes.radiusS),
-              ),
-              child: Text(
-                'REQUIRED',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
