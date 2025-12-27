@@ -9,22 +9,64 @@ import '../services/language_detection_service.dart';
 /// Translation service that handles premium/freemium restrictions
 class TranslationService {
   static const Map<TranslateLanguage, String> _languageNames = {
+    // Common languages
     TranslateLanguage.english: 'English',
     TranslateLanguage.french: 'French',
     TranslateLanguage.spanish: 'Spanish',
-    TranslateLanguage.chinese: 'Chinese',
     TranslateLanguage.german: 'German',
     TranslateLanguage.arabic: 'Arabic',
+    TranslateLanguage.chinese: 'Chinese',
+    // Additional premium languages
+    TranslateLanguage.portuguese: 'Portuguese',
+    TranslateLanguage.italian: 'Italian',
+    TranslateLanguage.russian: 'Russian',
+    TranslateLanguage.japanese: 'Japanese',
+    TranslateLanguage.korean: 'Korean',
+    TranslateLanguage.hindi: 'Hindi',
+    TranslateLanguage.dutch: 'Dutch',
+    TranslateLanguage.turkish: 'Turkish',
+    TranslateLanguage.polish: 'Polish',
+    TranslateLanguage.vietnamese: 'Vietnamese',
+    TranslateLanguage.thai: 'Thai',
+    TranslateLanguage.indonesian: 'Indonesian',
+    TranslateLanguage.greek: 'Greek',
+    TranslateLanguage.hebrew: 'Hebrew',
+    TranslateLanguage.swedish: 'Swedish',
+    TranslateLanguage.romanian: 'Romanian',
+    TranslateLanguage.czech: 'Czech',
+    TranslateLanguage.ukrainian: 'Ukrainian',
+    TranslateLanguage.bengali: 'Bengali',
+    TranslateLanguage.urdu: 'Urdu',
   };
 
-  /// All supported languages
+  /// All supported languages (sorted alphabetically by name)
   static const List<TranslateLanguage> allLanguages = [
+    TranslateLanguage.arabic,
+    TranslateLanguage.bengali,
+    TranslateLanguage.chinese,
+    TranslateLanguage.czech,
+    TranslateLanguage.dutch,
     TranslateLanguage.english,
     TranslateLanguage.french,
-    TranslateLanguage.arabic,
-    TranslateLanguage.spanish,
     TranslateLanguage.german,
-    TranslateLanguage.chinese,
+    TranslateLanguage.greek,
+    TranslateLanguage.hebrew,
+    TranslateLanguage.hindi,
+    TranslateLanguage.indonesian,
+    TranslateLanguage.italian,
+    TranslateLanguage.japanese,
+    TranslateLanguage.korean,
+    TranslateLanguage.polish,
+    TranslateLanguage.portuguese,
+    TranslateLanguage.romanian,
+    TranslateLanguage.russian,
+    TranslateLanguage.spanish,
+    TranslateLanguage.swedish,
+    TranslateLanguage.thai,
+    TranslateLanguage.turkish,
+    TranslateLanguage.ukrainian,
+    TranslateLanguage.urdu,
+    TranslateLanguage.vietnamese,
   ];
 
   /// Get available source languages for the current user
@@ -147,6 +189,7 @@ class TranslationService {
   }
 
   /// Translate text with premium restrictions check
+  /// This method preserves the original text layout (paragraphs, line breaks)
   static Future<String> translateText(
     BuildContext context,
     String text,
@@ -172,8 +215,10 @@ class TranslationService {
         sourceLanguage: sourceLanguage,
         targetLanguage: targetLanguage,
       );
-      final translation = await translator.translateText(text);
-      return translation;
+
+      // Preserve layout by translating paragraph by paragraph
+      final translatedText = await _translatePreservingLayout(translator, text);
+      return translatedText;
     } catch (e) {
       print('Translation error: $e');
       rethrow;
@@ -182,5 +227,73 @@ class TranslationService {
         await translator?.close();
       } catch (_) {}
     }
+  }
+
+  /// Translate text while preserving the original layout structure
+  /// Splits by paragraphs, translates each, and reassembles
+  static Future<String> _translatePreservingLayout(
+    OnDeviceTranslator translator,
+    String text,
+  ) async {
+    print("=== Translation Input ===");
+    print("Text length: ${text.length}");
+    final inputNewlines = "\n".allMatches(text).length;
+    print("Newline count: $inputNewlines");
+    print("First 200 chars: ${text.substring(0, text.length > 200 ? 200 : text.length)}");
+
+    // Split by paragraph breaks (double newlines or more)
+    final paragraphPattern = RegExp(r'\n\s*\n');
+    final paragraphs = text.split(paragraphPattern);
+
+    print('Paragraphs found: ${paragraphs.length}');
+
+    final List<String> translatedParagraphs = [];
+
+    for (int pIdx = 0; pIdx < paragraphs.length; pIdx++) {
+      final paragraph = paragraphs[pIdx];
+
+      if (paragraph.trim().isEmpty) {
+        // Preserve empty paragraphs
+        translatedParagraphs.add('');
+        continue;
+      }
+
+      // Split paragraph into lines to preserve line breaks within paragraphs
+      final lines = paragraph.split('\n');
+      print('Paragraph $pIdx has ${lines.length} lines');
+
+      final List<String> translatedLines = [];
+
+      for (final line in lines) {
+        if (line.trim().isEmpty) {
+          // Preserve empty lines
+          translatedLines.add('');
+          continue;
+        }
+
+        // Translate the line
+        try {
+          final translatedLine = await translator.translateText(line.trim());
+          translatedLines.add(translatedLine);
+        } catch (e) {
+          // If translation fails for a line, keep original
+          print('Line translation failed: $e');
+          translatedLines.add(line);
+        }
+      }
+
+      // Rejoin lines within paragraph
+      translatedParagraphs.add(translatedLines.join('\n'));
+    }
+
+    // Rejoin paragraphs with double newlines
+    final result = translatedParagraphs.join("\n\n");
+
+    print("=== Translation Output ===");
+    print("Result length: ${result.length}");
+    final outputNewlines = "\n".allMatches(result).length;
+    print("Result newline count: $outputNewlines");
+
+    return result;
   }
 }

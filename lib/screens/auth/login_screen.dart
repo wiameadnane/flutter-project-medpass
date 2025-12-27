@@ -78,28 +78,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: AppSizes.paddingXL),
 
-                      // Title
-                      Text(
-                        'Welcome Back',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                        ),
-                      ).animate().fadeIn(duration: 400.ms, delay: 50.ms),
-
-                      const SizedBox(height: AppSizes.paddingS),
-
-                      Text(
-                        'Sign in to access your health passport',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
-
-                      const SizedBox(height: AppSizes.paddingXL),
-
                       // Email field
                       CustomTextField(
                         label: AppStrings.email,

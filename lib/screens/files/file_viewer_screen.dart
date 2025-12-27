@@ -6,11 +6,14 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants.dart';
 import '../../models/medical_file_model.dart';
 import '../../providers/user_provider.dart';
+import '../../services/pdf_extraction_service.dart';
+import '../pdf_extraction_screen.dart';
 
 class FileViewerScreen extends StatelessWidget {
   final FileCategory? category;
@@ -513,6 +516,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
   int? currentPage = 0;
   bool isReady = false;
   bool isDownloading = true;
+  bool isExtracting = false;
   String? localFilePath;
   String errorMessage = '';
 
@@ -552,12 +556,95 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     }
   }
 
+  Future<void> _sharePdf() async {
+    if (localFilePath == null) return;
+
+    try {
+      final xFile = XFile(localFilePath!, mimeType: 'application/pdf');
+      await Share.shareXFiles(
+        [xFile],
+        subject: widget.fileName,
+        text: 'Shared from Med-Pass',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _extractAndTranslate() async {
+    if (localFilePath == null) return;
+
+    setState(() => isExtracting = true);
+
+    try {
+      final extractionService = PdfExtractionService();
+      final result = await extractionService.extractTextFromPdf(localFilePath!);
+      await extractionService.dispose();
+
+      if (!mounted) return;
+
+      if (result.success && result.text.isNotEmpty) {
+        // Navigate to extraction screen with the extracted text
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PdfExtractionScreen(
+              extractedText: result.text,
+              pageCount: result.pageCount,
+              fileName: widget.fileName,
+              originalPdfPath: localFilePath!,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error ?? 'No text could be extracted from this PDF'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Extraction failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isExtracting = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.fileName),
         actions: [
+          // Extract & Translate button
+          if (localFilePath != null && isReady)
+            IconButton(
+              icon: const Icon(Icons.translate_rounded),
+              tooltip: 'Extract & Translate',
+              onPressed: isExtracting ? null : _extractAndTranslate,
+            ),
+          // Share button
+          if (localFilePath != null && isReady)
+            IconButton(
+              icon: const Icon(Icons.share_rounded),
+              tooltip: 'Share PDF',
+              onPressed: _sharePdf,
+            ),
+          // Page indicator
           if (pages != null && pages! > 1)
             Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -651,6 +738,46 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+          // Extraction progress overlay
+          if (isExtracting)
+            Container(
+              color: Colors.black.withAlpha((0.7 * 255).round()),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Extracting Text...',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'This may take a moment\nfor large documents',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -190,22 +190,46 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
         final rawString = scannedDocuments.toString();
         debugPrint('Raw string: $rawString');
 
-        // Look for file:/// pattern and extract the path
-        final filePattern = RegExp(r'file:///([^\s\}\]]+\.(jpg|jpeg|png|pdf))');
-        final match = filePattern.firstMatch(rawString);
+        // Method 1: Look for imageUri= pattern (most specific)
+        final imageUriPattern = RegExp(r'imageUri=file://(/[^\s\}\]\,]+)', caseSensitive: false);
+        var match = imageUriPattern.firstMatch(rawString);
         if (match != null) {
-          imagePath = '/${match.group(1)}';
-          debugPrint('Extracted from regex: $imagePath');
+          imagePath = match.group(1);
+          debugPrint('Extracted from imageUri pattern: $imagePath');
         }
 
-        // If regex didn't work, try manual extraction
+        // Method 2: Look for file:/// pattern with common image extensions
+        if (imagePath == null) {
+          final filePattern = RegExp(r'file://(/[^\s\}\]\,]+\.(jpg|jpeg|png|pdf))', caseSensitive: false);
+          match = filePattern.firstMatch(rawString);
+          if (match != null) {
+            imagePath = match.group(1);
+            debugPrint('Extracted from file pattern: $imagePath');
+          }
+        }
+
+        // Method 3: Look for any file:/// path
+        if (imagePath == null) {
+          final anyFilePattern = RegExp(r'file://(/[^\s\}\]\,]+)');
+          match = anyFilePattern.firstMatch(rawString);
+          if (match != null) {
+            imagePath = match.group(1);
+            debugPrint('Extracted from any file pattern: $imagePath');
+          }
+        }
+
+        // Method 4: Manual extraction as last resort
         if (imagePath == null && rawString.contains('file:///')) {
           final startIndex = rawString.indexOf('file:///');
           if (startIndex != -1) {
-            var endIndex = rawString.indexOf('}', startIndex);
-            if (endIndex == -1) endIndex = rawString.indexOf(']', startIndex);
-            if (endIndex == -1) endIndex = rawString.length;
-
+            var endIndex = rawString.length;
+            // Find the nearest terminator
+            for (final terminator in ['}', ']', ',', ' ']) {
+              final idx = rawString.indexOf(terminator, startIndex);
+              if (idx != -1 && idx < endIndex) {
+                endIndex = idx;
+              }
+            }
             final fileUri = rawString.substring(startIndex, endIndex);
             imagePath = fileUri.replaceFirst('file://', '');
             debugPrint('Extracted manually: $imagePath');
@@ -820,7 +844,6 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
   Widget _buildResultsCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
@@ -829,41 +852,157 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Extracted Text Header
-          Row(
-            children: [
-              const Icon(Icons.text_fields_rounded, color: AppColors.primary, size: 20),
-              const SizedBox(width: AppSizes.paddingS),
-              Text('Extracted Text', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-            ],
-          ),
-          const SizedBox(height: AppSizes.paddingM),
+          // Text Content Section with tabs
+          _buildTextContentSection(),
 
-          // Extracted Text Content (scrollable)
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 120),
-            child: SingleChildScrollView(
-              child: Text(_recognizedText!, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.textDark, height: 1.5)),
+          // Divider
+          Container(
+            height: 1,
+            color: AppColors.divider,
+          ),
+
+          // Translation Controls Section
+          Padding(
+            padding: const EdgeInsets.all(AppSizes.paddingM),
+            child: Column(
+              children: [
+                // Language Selection
+                _buildLanguageSelector(),
+                const SizedBox(height: AppSizes.paddingM),
+
+                // Translate Button
+                _buildTranslateButton(),
+
+                // Save Document Button
+                const SizedBox(height: AppSizes.paddingM),
+                _buildSaveButton(),
+              ],
             ),
           ),
-          const SizedBox(height: AppSizes.paddingM),
+        ],
+      ),
+    );
+  }
 
-          // Language Selection
-          _buildLanguageSelector(),
-          const SizedBox(height: AppSizes.paddingM),
+  Widget _buildTextContentSection() {
+    return DefaultTabController(
+      length: _translatedText != null ? 2 : 1,
+      child: Column(
+        children: [
+          // Tab Bar
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundLight,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
+            ),
+            child: TabBar(
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.textSecondary,
+              indicatorColor: AppColors.primary,
+              indicatorWeight: 3,
+              labelStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w500),
+              tabs: [
+                const Tab(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.text_fields_rounded, size: 18),
+                      SizedBox(width: 6),
+                      Text('Original'),
+                    ],
+                  ),
+                ),
+                if (_translatedText != null)
+                  const Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.translate_rounded, size: 18),
+                        SizedBox(width: 6),
+                        Text('Translated'),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
 
-          // Translate Button
-          _buildTranslateButton(),
+          // Tab Content
+          SizedBox(
+            height: 200, // Fixed height for text content
+            child: TabBarView(
+              children: [
+                // Original Text Tab
+                _buildTextTabContent(
+                  text: _recognizedText!,
+                  accentColor: AppColors.primary,
+                ),
+                // Translated Text Tab
+                if (_translatedText != null)
+                  _buildTextTabContent(
+                    text: _translatedText!,
+                    accentColor: AppColors.accent,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          // Translated Text
-          if (_translatedText != null) ...[
-            const SizedBox(height: AppSizes.paddingM),
-            _buildTranslatedText(),
-          ],
+  Widget _buildTextTabContent({
+    required String text,
+    required Color accentColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Word count indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: accentColor.withAlpha((0.1 * 255).round()),
+              borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            ),
+            child: Text(
+              '${text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length} words',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: accentColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSizes.paddingS),
 
-          // Save Document Button
-          const SizedBox(height: AppSizes.paddingL),
-          _buildSaveButton(),
+          // Scrollable text content
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  text,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textDark,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -896,7 +1035,9 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
     return Consumer<UserProvider>(
       builder: (context, userProvider, child) {
         final sourceLanguages = TranslationService.getAvailableSourceLanguages(context);
-        final targetLanguages = TranslationService.getAvailableTargetLanguages(context);
+        final allTargetLanguages = TranslationService.allLanguages; // Show ALL languages
+        final freeTargetLanguages = TranslationService.getAvailableTargetLanguages(context);
+        final userIsPremium = userProvider.user?.isPremium ?? false;
 
         // Build auto-detect display text
         String autoDetectText = 'Auto-detect';
@@ -937,6 +1078,7 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
 
             Row(
               children: [
+                // SOURCE LANGUAGE - All languages available for everyone
                 Expanded(
                   child: DropdownButtonFormField<TranslateLanguage?>(
                     isDense: true,
@@ -990,7 +1132,7 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
                           ],
                         ),
                       ),
-                      // All available source languages
+                      // All available source languages (unlimited for all users)
                       ...sourceLanguages.map((lang) {
                         return DropdownMenuItem<TranslateLanguage?>(
                           value: lang,
@@ -1011,6 +1153,7 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 4),
                   child: Icon(Icons.arrow_forward, color: AppColors.primary, size: 20),
                 ),
+                // TARGET LANGUAGE - Show all, but lock premium ones for free users
                 Expanded(
                   child: DropdownButtonFormField<TranslateLanguage>(
                     isDense: true,
@@ -1028,15 +1171,14 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     ),
                     selectedItemBuilder: (BuildContext context) {
-                      return targetLanguages.map((lang) => Text(
+                      return allTargetLanguages.map((lang) => Text(
                         TranslationService.getLanguageName(lang),
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark),
                       )).toList();
                     },
-                    items: targetLanguages.map((lang) {
-                      final isPremium = TranslationService.isPremiumTargetLanguage(lang, context);
-                      final userIsPremium = userProvider.user?.isPremium ?? false;
+                    items: allTargetLanguages.map((lang) {
+                      final isLocked = !userIsPremium && !freeTargetLanguages.contains(lang);
                       return DropdownMenuItem(
                         value: lang,
                         child: Row(
@@ -1045,13 +1187,36 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
                               child: Text(
                                 TranslationService.getLanguageName(lang),
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(color: AppColors.textDark),
+                                style: GoogleFonts.inter(
+                                  color: isLocked ? AppColors.textMuted : AppColors.textDark,
+                                ),
                               ),
                             ),
-                            if (isPremium && !userIsPremium)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 4),
-                                child: Icon(Icons.lock, size: 14, color: AppColors.primary),
+                            if (isLocked)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withAlpha((0.1 * 255).round()),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.lock, size: 10, color: AppColors.primary),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        'PRO',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                           ],
                         ),
@@ -1059,10 +1224,10 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) {
-                        final isPremium = TranslationService.isPremiumTargetLanguage(value, context);
-                        final userIsPremium = userProvider.user?.isPremium ?? false;
-                        if (isPremium && !userIsPremium) {
-                          TranslationService.showUpgradeDialog(context);
+                        final isLocked = !userIsPremium && !freeTargetLanguages.contains(value);
+                        if (isLocked) {
+                          // Show upgrade dialog
+                          _showPremiumLanguageDialog(context);
                         } else {
                           setState(() => _targetLanguage = value);
                         }
@@ -1072,9 +1237,169 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
                 ),
               ],
             ),
+
+            // Premium hint for free users
+            if (!userIsPremium)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 14,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Upgrade to Premium for all languages',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/billing'),
+                      child: Text(
+                        'Upgrade',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         );
       },
+    );
+  }
+
+  void _showPremiumLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha((0.1 * 255).round()),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.translate, color: AppColors.primary, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Premium Feature',
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Unlock all translation languages with Premium!',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Free plan includes:',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildFeatureRow(Icons.check_circle, 'Your preferred language', true),
+            _buildFeatureRow(Icons.check_circle, 'English', true),
+            const SizedBox(height: 12),
+            Text(
+              'Premium adds:',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildFeatureRow(Icons.add_circle, 'Spanish, Portuguese, Italian', false),
+            _buildFeatureRow(Icons.add_circle, 'German, Dutch, Swedish', false),
+            _buildFeatureRow(Icons.add_circle, 'Chinese, Japanese, Korean', false),
+            _buildFeatureRow(Icons.add_circle, 'Arabic, Hebrew, Hindi, Urdu', false),
+            _buildFeatureRow(Icons.add_circle, 'Russian, Polish, Turkish', false),
+            _buildFeatureRow(Icons.add_circle, '+ 10 more languages', false),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Maybe Later',
+              style: GoogleFonts.inter(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              Navigator.pushNamed(context, '/billing');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Upgrade Now',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureRow(IconData icon, String text, bool isFree) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: isFree ? AppColors.success : AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: AppColors.textDark,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1092,29 +1417,4 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
     );
   }
 
-  Widget _buildTranslatedText() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.g_translate_rounded, color: AppColors.primary, size: 20),
-            const SizedBox(width: AppSizes.paddingS),
-            Text('Translated Text', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-          ],
-        ),
-        const SizedBox(height: AppSizes.paddingS),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSizes.paddingS),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundLight,
-            borderRadius: BorderRadius.circular(AppSizes.radiusS),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: Text(_translatedText!, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.textDark, height: 1.5)),
-        ),
-      ],
-    );
-  }
 }

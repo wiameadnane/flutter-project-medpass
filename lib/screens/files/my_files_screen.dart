@@ -1,11 +1,177 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants.dart';
 import '../ocr_scan_screen.dart';
+import 'upload_file_screen.dart';
 
 class MyFilesScreen extends StatelessWidget {
   const MyFilesScreen({super.key});
+
+  void _showUploadOptionsDialog(BuildContext parentContext) {
+    showModalBottomSheet(
+      context: parentContext,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+              Text(
+                'Add Document',
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingS),
+              Text(
+                'Choose how to add your document',
+                style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+
+              // Scan Document Option
+              _buildUploadOption(
+                context: sheetContext,
+                icon: Icons.document_scanner_rounded,
+                title: 'Scan Document',
+                subtitle: 'Camera scan with OCR & translation',
+                color: AppColors.primary,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  Navigator.push(
+                    parentContext,
+                    MaterialPageRoute(
+                      builder: (context) => const OCRScanScreen(),
+                      settings: const RouteSettings(arguments: {'autoShowDialog': true}),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSizes.paddingM),
+
+              // Upload PDF Option
+              _buildUploadOption(
+                context: sheetContext,
+                icon: Icons.picture_as_pdf_rounded,
+                title: 'Upload PDF',
+                subtitle: 'Import existing PDF file directly',
+                color: AppColors.accent,
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  await _pickAndUploadPdf(parentContext);
+                },
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadOption({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color: color.withAlpha((0.05 * 255).round()),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          border: Border.all(color: color.withAlpha((0.2 * 255).round())),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: color.withAlpha((0.1 * 255).round()),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: AppSizes.paddingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: color, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadPdf(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+
+        // Navigate directly to upload screen with the PDF
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UploadFileScreen(initialFile: file),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking file: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,15 +229,9 @@ class MyFilesScreen extends StatelessWidget {
                 _MenuTile(
                   icon: Icons.add_photo_alternate_rounded,
                   title: AppStrings.uploadMore,
-                  subtitle: 'Scan, capture or upload documents',
+                  subtitle: 'Scan or upload documents',
                   iconColor: AppColors.primary,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const OCRScanScreen(),
-                      settings: const RouteSettings(arguments: {'autoShowDialog': true}),
-                    ),
-                  ),
+                  onTap: () => _showUploadOptionsDialog(context),
                 ),
               ]).animate().fadeIn(duration: 300.ms, delay: 200.ms),
 
