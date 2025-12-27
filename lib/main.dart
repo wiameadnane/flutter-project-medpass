@@ -21,11 +21,13 @@ import 'screens/files/upload_file_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/personal_card_screen.dart';
 import 'screens/home/qr_code_screen.dart';
+import 'screens/ocr_scan_screen.dart';
 import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/personal_info_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/search/search_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'widgets/document_scanner.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -81,9 +83,7 @@ class MedPassApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => UserProvider())],
       child: MaterialApp(
         title: 'Med-Pass',
         debugShowCheckedModeBanner: false,
@@ -134,6 +134,8 @@ class MedPassApp extends StatelessWidget {
               return _buildPageRoute(const PaymentScreen());
             case '/settings':
               return _buildPageRoute(const SettingsScreen());
+            case '/scan-document':
+              return _buildPageRoute(const OCRScanScreen());
             case '/search':
               return _buildPageRoute(const SearchScreen());
             default:
@@ -238,9 +240,9 @@ class SplashScreen extends StatelessWidget {
             Text(
               'Med-Pass',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: AppSizes.paddingXL),
             // Loading indicator

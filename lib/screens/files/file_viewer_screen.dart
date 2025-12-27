@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
@@ -25,87 +26,90 @@ class FileViewerScreen extends StatelessWidget {
                 children: [
                   // Header
                   Padding(
-              padding: const EdgeInsets.all(AppSizes.paddingL),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Back button
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 45,
-                      height: 45,
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.primary,
-                        size: 22,
+                    padding: const EdgeInsets.all(AppSizes.paddingL),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Back button
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: 45,
+                            height: 45,
+                            decoration: BoxDecoration(
+                              color: AppColors.backgroundLight,
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusM),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                        // Logo
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: AppColors.backgroundLight,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusM),
+                          ),
+                          child: const Icon(
+                            Icons.medical_services_rounded,
+                            color: AppColors.primary,
+                            size: 30,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 500.ms),
+
+                  // Title
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingL,
+                    ),
+                    child: Text(
+                      AppStrings.allFilesInOneSpace,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.accent,
                       ),
                     ),
-                  ),
-                  // Logo
+                  ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
+
+                  const SizedBox(height: AppSizes.paddingM),
+
+                  // Category title
                   Container(
-                    width: 50,
-                    height: 50,
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingL),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingL,
+                      vertical: AppSizes.paddingS,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      color: _getCategoryColor(category),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusL),
                     ),
-                    child: const Icon(
-                      Icons.medical_services_rounded,
-                      color: AppColors.primary,
-                      size: 30,
+                    child: Text(
+                      _getCategoryName(category),
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 500.ms),
+                  ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
 
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingL,
-              ),
-              child: Text(
-                AppStrings.allFilesInOneSpace,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.accent,
-                ),
-              ),
-            ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
+                  const SizedBox(height: AppSizes.paddingL),
 
-            const SizedBox(height: AppSizes.paddingM),
-
-            // Category title
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingL,
-                vertical: AppSizes.paddingS,
-              ),
-              decoration: BoxDecoration(
-                color: _getCategoryColor(category),
-                borderRadius: BorderRadius.circular(AppSizes.radiusL),
-              ),
-              child: Text(
-                _getCategoryName(category),
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
-
-            const SizedBox(height: AppSizes.paddingL),
-
-            // Document viewer
+                  // Document viewer
                   Expanded(
                     child: Consumer<UserProvider>(
                       builder: (context, userProvider, child) {
@@ -208,7 +212,8 @@ class FileViewerScreen extends StatelessWidget {
                   top: 8,
                   right: 8,
                   child: CircleAvatar(
-                    backgroundColor: Colors.white.withAlpha((0.9 * 255).round()),
+                    backgroundColor:
+                        Colors.white.withAlpha((0.9 * 255).round()),
                     child: IconButton(
                       icon: const Icon(Icons.close, color: AppColors.textDark),
                       onPressed: () => Navigator.pop(dialogContext),
@@ -223,14 +228,29 @@ class FileViewerScreen extends StatelessWidget {
       return;
     }
 
-    // Non-image files: show info / placeholder
+    // PDF files: open in-app PDF viewer
+    if (file.fileUrl != null && file.isPdf) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PDFViewerScreen(
+            fileUrl: file.fileUrl!,
+            fileName: file.name,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Other files: show info / placeholder
     // If we have a file URL, offer to open it with an external app/browser.
     if (file.fileUrl != null) {
       showDialog(
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: Text(file.name),
-          content: Text(file.description ?? 'Open this file in an external viewer.'),
+          content:
+              Text(file.description ?? 'Open this file in an external viewer.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
@@ -242,19 +262,22 @@ class FileViewerScreen extends StatelessWidget {
                 final messenger = ScaffoldMessenger.of(context);
                 final uri = Uri.tryParse(file.fileUrl!);
                 if (uri == null) {
-                  messenger.showSnackBar(const SnackBar(content: Text('Invalid file URL')));
+                  messenger.showSnackBar(
+                      const SnackBar(content: Text('Invalid file URL')));
                   return;
                 }
 
                 try {
                   final can = await canLaunchUrl(uri);
                   if (!can) {
-                    messenger.showSnackBar(const SnackBar(content: Text('Cannot open file URL')));
+                    messenger.showSnackBar(
+                        const SnackBar(content: Text('Cannot open file URL')));
                     return;
                   }
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
                 } catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text('Failed to open file: ${e.toString()}')));
+                  messenger.showSnackBar(SnackBar(
+                      content: Text('Failed to open file: ${e.toString()}')));
                 }
               },
               child: const Text('Open'),
@@ -337,5 +360,122 @@ class FileViewerScreen extends StatelessWidget {
       case FileCategory.other:
         return AppColors.textSecondary;
     }
+  }
+}
+
+class PDFViewerScreen extends StatefulWidget {
+  final String fileUrl;
+  final String fileName;
+
+  const PDFViewerScreen({
+    super.key,
+    required this.fileUrl,
+    required this.fileName,
+  });
+
+  @override
+  State<PDFViewerScreen> createState() => _PDFViewerScreenState();
+}
+
+class _PDFViewerScreenState extends State<PDFViewerScreen> {
+  int? pages = 0;
+  int? currentPage = 0;
+  bool isReady = false;
+  String errorMessage = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.fileName),
+        actions: [
+          if (pages != null && pages! > 1)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: Text(
+                  '${currentPage! + 1} / $pages',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          PDFView(
+            filePath: null,
+            defaultPage: currentPage!,
+            enableSwipe: true,
+            swipeHorizontal: true,
+            autoSpacing: false,
+            pageFling: false,
+            onRender: (_pages) {
+              setState(() {
+                pages = _pages;
+                isReady = true;
+              });
+            },
+            onError: (error) {
+              setState(() {
+                errorMessage = error.toString();
+              });
+              print(error.toString());
+            },
+            onPageError: (page, error) {
+              setState(() {
+                errorMessage = '$page: ${error.toString()}';
+              });
+              print('$page: ${error.toString()}');
+            },
+            onViewCreated: (PDFViewController pdfViewController) {
+              // You can use the controller to control the PDF view
+            },
+            onPageChanged: (int? page, int? total) {
+              setState(() {
+                currentPage = page;
+              });
+            },
+          ),
+          if (!isReady && errorMessage.isEmpty)
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
+          if (errorMessage.isNotEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to load PDF',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      errorMessage,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

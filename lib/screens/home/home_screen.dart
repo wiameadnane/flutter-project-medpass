@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/constants.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../ocr_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _onRefresh() async {
     if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
-
     try {
       final userProvider = context.read<UserProvider>();
       await userProvider.refreshData();
@@ -68,9 +68,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: AppSizes.paddingL),
 
                     // Quick Actions Row (QR + Emergency)
-                    _buildQuickActions(context)
-                        .animate()
-                        .fadeIn(duration: 500.ms, delay: 200.ms),
+                    _buildQuickActions(
+                      context,
+                    ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
 
                     const SizedBox(height: AppSizes.paddingL),
 
@@ -80,9 +80,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: AppSizes.paddingL),
 
                     // Recent Files Section
-                    _buildRecentFilesSection(context)
-                        .animate()
-                        .fadeIn(duration: 500.ms, delay: 500.ms),
+                    _buildRecentFilesSection(
+                      context,
+                    ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
 
                     const SizedBox(height: AppSizes.paddingXL),
                   ],
@@ -223,7 +223,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Colors.amber,
+                            size: 16,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Premium',
@@ -278,7 +282,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_rounded, color: AppColors.warning, size: 16),
+                      const Icon(
+                        Icons.warning_rounded,
+                        color: AppColors.warning,
+                        size: 16,
+                      ),
                       const SizedBox(width: AppSizes.paddingS),
                       Expanded(
                         child: Text(
@@ -310,7 +318,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.phone_rounded, color: Colors.white, size: 16),
+                      const Icon(
+                        Icons.phone_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       const SizedBox(width: AppSizes.paddingS),
                       Expanded(
                         child: Text(
@@ -348,8 +360,9 @@ class _HomeScreenState extends State<HomeScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: (isWarning ? AppColors.warning : Colors.white)
-                .withAlpha((0.2 * 255).round()),
+            color: (isWarning ? AppColors.warning : Colors.white).withAlpha(
+              (0.2 * 255).round(),
+            ),
             borderRadius: BorderRadius.circular(AppSizes.radiusS),
           ),
           child: Icon(icon, color: color, size: 20),
@@ -645,10 +658,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              ...recentFiles.map((file) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSizes.paddingS),
-                    child: _buildRecentFileItem(context, file),
-                  )),
+              ...recentFiles.map(
+                (file) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSizes.paddingS),
+                  child: _buildRecentFileItem(context, file),
+                ),
+              ),
           ],
         );
       },
@@ -657,7 +672,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentFileItem(BuildContext context, dynamic file) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/file-viewer', arguments: file.category),
+      onTap: () => Navigator.pushNamed(
+        context,
+        '/file-viewer',
+        arguments: file.category,
+      ),
       child: Container(
         padding: const EdgeInsets.all(AppSizes.paddingM),
         decoration: BoxDecoration(
@@ -733,7 +752,9 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(AppSizes.paddingL),
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXL)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppSizes.radiusXL),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -821,22 +842,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFAB(BuildContext context) {
     return FloatingActionButton(
-      onPressed: () {
-        // TODO: Navigate to add document screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Add document feature coming soon'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-      },
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const OCRScanScreen(),
+          settings: const RouteSettings(arguments: {'autoShowDialog': true}),
+        ),
+      ),
       backgroundColor: AppColors.accent,
       elevation: 8,
-      child: const Icon(
-        Icons.add_rounded,
-        color: Colors.white,
-        size: 28,
-      ),
+      child: const Icon(Icons.document_scanner, color: Colors.white, size: 28),
     );
   }
 
@@ -844,7 +859,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Drawer(
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(AppSizes.radiusL)),
+        borderRadius: BorderRadius.horizontal(
+          right: Radius.circular(AppSizes.radiusL),
+        ),
       ),
       child: SafeArea(
         child: Column(
@@ -899,7 +916,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
-                              color: Colors.white.withAlpha((0.8 * 255).round()),
+                              color: Colors.white.withAlpha(
+                                (0.8 * 255).round(),
+                              ),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -969,11 +988,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context, userProvider, child) {
                   return GestureDetector(
                     onTap: () async {
+                      if (!context.mounted) return;
                       final confirmed = await ConfirmDialog.showLogout(context);
                       if (confirmed && context.mounted) {
                         await userProvider.logout();
                         if (context.mounted) {
-                          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            '/',
+                            (route) => false,
+                          );
                         }
                       }
                     },
@@ -981,10 +1005,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(AppSizes.paddingM),
                       decoration: BoxDecoration(
-                        color: AppColors.emergency.withAlpha((0.1 * 255).round()),
+                        color: AppColors.emergency.withAlpha(
+                          (0.1 * 255).round(),
+                        ),
                         borderRadius: BorderRadius.circular(AppSizes.radiusL),
                         border: Border.all(
-                          color: AppColors.emergency.withAlpha((0.3 * 255).round()),
+                          color: AppColors.emergency.withAlpha(
+                            (0.3 * 255).round(),
+                          ),
                         ),
                       ),
                       child: Row(

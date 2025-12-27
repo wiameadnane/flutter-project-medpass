@@ -8,11 +8,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants.dart';
 import '../../models/medical_file_model.dart';
 import '../../providers/user_provider.dart';
 import '../../firebase_options.dart';
+import '../ocr_scan_screen.dart';
 
 class UploadFileScreen extends StatefulWidget {
   const UploadFileScreen({super.key});
@@ -33,6 +35,12 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
   Timer? _stallTimer;
   int _attempt = 0;
   final int _maxAttempts = 3;
+  final ImagePicker _imagePicker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -42,12 +50,259 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
   }
 
   Future<void> _pickFile() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+              Text(
+                'Select File Source',
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSourceOption(
+                      icon: Icons.photo_library_rounded,
+                      title: 'Gallery',
+                      subtitle: 'Choose from gallery',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickFromGallery();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.paddingM),
+                  Expanded(
+                    child: _buildSourceOption(
+                      icon: Icons.camera_alt_rounded,
+                      title: 'Camera',
+                      subtitle: 'Take a photo',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showCameraOptions();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.paddingM),
+              _buildSourceOption(
+                icon: Icons.attach_file,
+                title: 'File Picker',
+                subtitle: 'Choose any file',
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickFromFilePicker();
+                },
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundLight,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha((0.1 * 255).round()),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 24),
+            ),
+            const SizedBox(height: AppSizes.paddingS),
+            Text(
+              title,
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final XFile? picked =
+          await _imagePicker.pickImage(source: ImageSource.gallery);
+      if (picked != null) {
+        await _processPickedImage(picked);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickFromFilePicker() async {
     final result = await FilePicker.platform.pickFiles(withData: kIsWeb);
     if (result == null) return;
     setState(() {
       _pickedFile = result.files.first;
       _nameController.text = _pickedFile?.name ?? '';
     });
+  }
+
+  Future<void> _processPickedImage(XFile pickedFile) async {
+    final bytes = await pickedFile.readAsBytes();
+    final fileName = pickedFile.name;
+    setState(() {
+      _pickedFile = PlatformFile(
+        name: fileName,
+        size: bytes.length,
+        bytes: bytes,
+      );
+      _nameController.text = fileName;
+    });
+  }
+
+  void _showCameraOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+              Text(
+                'Camera Options',
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSourceOption(
+                      icon: Icons.document_scanner,
+                      title: 'Scan Document',
+                      subtitle: 'OCR + Translation',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          _navigateToDocumentScanner();
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.paddingM),
+                  Expanded(
+                    child: _buildSourceOption(
+                      icon: Icons.camera_alt,
+                      title: 'Take Photo',
+                      subtitle: 'Normal photo',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _takeNormalPhoto();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.paddingL),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _takeNormalPhoto() async {
+    try {
+      final XFile? picked =
+          await _imagePicker.pickImage(source: ImageSource.camera);
+      if (picked != null) {
+        await _processPickedImage(picked);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error taking photo: $e')),
+        );
+      }
+    }
+  }
+
+  void _navigateToDocumentScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const OCRScanScreen()),
+    );
   }
 
   Future<void> _upload() async {
@@ -119,9 +374,8 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
         id: '',
         name: _nameController.text.isNotEmpty ? _nameController.text : basename,
         category: _category,
-        description: _descController.text.isNotEmpty
-            ? _descController.text
-            : null,
+        description:
+            _descController.text.isNotEmpty ? _descController.text : null,
         fileUrl: downloadUrl,
         uploadedAt: DateTime.now(),
       );
@@ -166,16 +420,17 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
   Future<String> _performSingleUpload(String uid, String basename) async {
     // Build path and ref
     final storagePath =
-      'users/$uid/medical_files/${DateTime.now().millisecondsSinceEpoch}_$basename';
+        'users/$uid/medical_files/${DateTime.now().millisecondsSinceEpoch}_$basename';
 
     // Use explicitly configured storage bucket if available. This helps when
     // the FirebaseOptions.storageBucket value differs from the platform
     // default or when using a Google Cloud Storage bucket that was enabled
     // separately.
-    final configuredBucket = DefaultFirebaseOptions.currentPlatform.storageBucket;
+    final configuredBucket =
+        DefaultFirebaseOptions.currentPlatform.storageBucket;
     final storage = (configuredBucket != null && configuredBucket.isNotEmpty)
-      ? FirebaseStorage.instanceFor(bucket: 'gs://$configuredBucket')
-      : FirebaseStorage.instance;
+        ? FirebaseStorage.instanceFor(bucket: 'gs://$configuredBucket')
+        : FirebaseStorage.instance;
 
     final ref = storage.ref().child(storagePath);
 
@@ -300,132 +555,149 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.paddingM),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      DropdownButtonFormField<FileCategory>(
-                        initialValue: _category,
-                        items: FileCategory.values
-                            .map((c) => DropdownMenuItem(
-                                  value: c,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 12,
-                                        height: 12,
-                                        decoration: BoxDecoration(
-                                          color: _categoryColor(c),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: AppSizes.paddingS),
-                                      Text(
-                                        _categoryName(c),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(color: AppColors.textPrimary),
-                                      ),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _category = v ?? FileCategory.other),
-                        decoration: const InputDecoration(labelText: 'Category'),
-                        dropdownColor: AppColors.backgroundCard,
-                        icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusL),
                       ),
-                      const SizedBox(height: AppSizes.paddingM),
-                      TextField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(labelText: 'File name'),
-                      ),
-                      const SizedBox(height: AppSizes.paddingM),
-                      TextField(
-                        controller: _descController,
-                        decoration: const InputDecoration(
-                          labelText: 'Description (optional)',
-                        ),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: AppSizes.paddingM),
-
-                      // File picker / preview row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _pickFile,
-                              icon: const Icon(Icons.attach_file),
-                              label: Text(_pickedFile?.name ?? 'Choose file'),
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.paddingS),
-                          if (_pickedFile != null)
-                            IconButton(
-                              onPressed: () => setState(() => _pickedFile = null),
-                              icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                              tooltip: 'Remove file',
-                            ),
-                        ],
-                      ),
-
-                      const SizedBox(height: AppSizes.paddingM),
-
-                      // Upload progress row
-                      if (_isUploading)
-                        Row(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.paddingM),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              child: _progress >= 0
-                                  ? LinearProgressIndicator(value: _progress, minHeight: 6)
-                                  : const LinearProgressIndicator(minHeight: 6),
+                            DropdownButtonFormField<FileCategory>(
+                              initialValue: _category,
+                              items: FileCategory.values
+                                  .map((c) => DropdownMenuItem(
+                                        value: c,
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 12,
+                                              height: 12,
+                                              decoration: BoxDecoration(
+                                                color: _categoryColor(c),
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                                width: AppSizes.paddingS),
+                                            Text(
+                                              _categoryName(c),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.copyWith(
+                                                      color: AppColors
+                                                          .textPrimary),
+                                            ),
+                                          ],
+                                        ),
+                                      ))
+                                  .toList(),
+                              onChanged: (v) => setState(
+                                  () => _category = v ?? FileCategory.other),
+                              decoration:
+                                  const InputDecoration(labelText: 'Category'),
+                              dropdownColor: AppColors.backgroundCard,
+                              icon: const Icon(Icons.keyboard_arrow_down,
+                                  color: AppColors.primary),
                             ),
-                            const SizedBox(width: AppSizes.paddingM),
-                            Chip(
-                              backgroundColor: AppColors.primary.withAlpha((0.12 * 255).round()),
-                              label: Text(
-                                _progress >= 0
-                                    ? '${(_progress * 100).toStringAsFixed(0)}%'
-                                    : 'Uploading',
-                                style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.primary),
+                            const SizedBox(height: AppSizes.paddingM),
+                            TextField(
+                              controller: _nameController,
+                              decoration:
+                                  const InputDecoration(labelText: 'File name'),
+                            ),
+                            const SizedBox(height: AppSizes.paddingM),
+                            TextField(
+                              controller: _descController,
+                              decoration: const InputDecoration(
+                                labelText: 'Description (optional)',
                               ),
+                              maxLines: 2,
                             ),
+                            const SizedBox(height: AppSizes.paddingM),
+
+                            // File picker / preview row
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _pickFile,
+                                    icon: const Icon(Icons.attach_file),
+                                    label: Text(
+                                        _pickedFile?.name ?? 'Choose file'),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSizes.paddingS),
+                                if (_pickedFile != null)
+                                  IconButton(
+                                    onPressed: () =>
+                                        setState(() => _pickedFile = null),
+                                    icon: const Icon(Icons.close,
+                                        color: AppColors.textSecondary),
+                                    tooltip: 'Remove file',
+                                  ),
+                              ],
+                            ),
+
+                            const SizedBox(height: AppSizes.paddingM),
+
+                            // Upload progress row
+                            if (_isUploading)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _progress >= 0
+                                        ? LinearProgressIndicator(
+                                            value: _progress, minHeight: 6)
+                                        : const LinearProgressIndicator(
+                                            minHeight: 6),
+                                  ),
+                                  const SizedBox(width: AppSizes.paddingM),
+                                  Chip(
+                                    backgroundColor: AppColors.primary
+                                        .withAlpha((0.12 * 255).round()),
+                                    label: Text(
+                                      _progress >= 0
+                                          ? '${(_progress * 100).toStringAsFixed(0)}%'
+                                          : 'Uploading',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(color: AppColors.primary),
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSizes.paddingM),
-
-              // Logs — compact, scrollable
-              if (_logs.isNotEmpty)
-                Container(
-                  width: double.infinity,
-                  constraints: const BoxConstraints(maxHeight: 160),
-                  padding: const EdgeInsets.all(AppSizes.paddingS),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundGrey,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                    border: Border.all(color: AppColors.divider),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: _logs.length,
-                    separatorBuilder: (context, index) => const Divider(height: 8, color: AppColors.divider),
-                    itemBuilder: (ctx, i) => Text(
-                      _logs[i],
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                      ),
                     ),
-                  ),
-                ),
+                    const SizedBox(height: AppSizes.paddingM),
+
+                    // Logs — compact, scrollable
+                    if (_logs.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(maxHeight: 160),
+                        padding: const EdgeInsets.all(AppSizes.paddingS),
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundGrey,
+                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                          border: Border.all(color: AppColors.divider),
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _logs.length,
+                          separatorBuilder: (context, index) => const Divider(
+                              height: 8, color: AppColors.divider),
+                          itemBuilder: (ctx, i) => Text(
+                            _logs[i],
+                            style: GoogleFonts.inter(
+                                fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: AppSizes.paddingM),
 
                     // Action button

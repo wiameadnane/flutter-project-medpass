@@ -50,6 +50,11 @@ class MedicalFileModel {
         url.endsWith('.bmp');
   }
 
+  bool get isPdf {
+    final url = (fileUrl ?? name).toLowerCase();
+    return url.endsWith('.pdf');
+  }
+
   MedicalFileModel copyWith({
     String? id,
     String? name,
