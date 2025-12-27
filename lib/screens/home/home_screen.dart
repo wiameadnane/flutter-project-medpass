@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSizes.paddingL,
-                  0,
+                  AppSizes.paddingM,
                   AppSizes.paddingL,
                   AppSizes.paddingL,
                 ),
@@ -129,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // App Logo
         Image.asset(
           'assets/images/medpass_logo.png',
-          height: 120,
+          height: 40,
           fit: BoxFit.contain,
         ),
         // Emergency Mode button
@@ -139,20 +139,22 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.emergency,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.emergency.withAlpha((0.3 * 255).round()),
+                  color: AppColors.shadow,
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.campaign_rounded,
-              color: Colors.white,
-              size: 24,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Image.asset(
+                'assets/images/siren.jpg',
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),
@@ -170,15 +172,18 @@ class _HomeScreenState extends State<HomeScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(AppSizes.paddingL),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: AppColors.primaryGradient,
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF1B4D6E), // Dark navy from logo text
+                AppColors.accent,   // Teal from logo icon
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(AppSizes.radiusL),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withAlpha((0.3 * 255).round()),
+                color: Color(0xFF1B4D6E).withAlpha((0.3 * 255).round()),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
@@ -328,15 +333,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: AppSizes.paddingS),
                       Expanded(
-                        child: Text(
-                          'Emergency: ${user.emergencyContactName ?? ''} (${user.emergencyContactPhone})',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (user.emergencyContactName != null &&
+                                user.emergencyContactName!.isNotEmpty)
+                              Text(
+                                'Emergency: ${user.emergencyContactName}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            Text(
+                              user.emergencyContactPhone!,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -952,7 +972,7 @@ class _HomeScreenState extends State<HomeScreen> {
           settings: const RouteSettings(arguments: {'autoShowDialog': true}),
         ),
       ),
-      backgroundColor: AppColors.accent,
+      backgroundColor: AppColors.accentDark,
       elevation: 8,
       child: const Icon(Icons.document_scanner_rounded, color: Colors.white, size: 28),
     );
@@ -973,9 +993,12 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSizes.paddingL),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: AppColors.primaryGradient,
+                  colors: [
+                    Color(0xFF1B4D6E), // Dark navy from logo text
+                    AppColors.accent,   // Teal from logo icon
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

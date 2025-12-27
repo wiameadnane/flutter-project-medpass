@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Med-Pass needs camera access to scan medical documents</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Med-Pass needs photo library access to import medical documents</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Med-Pass needs permission to save scanned documents</string>
 </dict>
 </plist>

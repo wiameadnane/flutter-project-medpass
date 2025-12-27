@@ -53,163 +53,172 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.paddingL,
-              AppSizes.paddingS,
-              AppSizes.paddingL,
-              AppSizes.paddingL,
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Logo
-                  Center(
-                    child: Image.asset(
-                      'assets/images/medpass_logo.png',
-                      height: 120,
-                      fit: BoxFit.contain,
-                    ),
-                  ).animate().fadeIn(duration: 500.ms),
+        child: Column(
+          children: [
+            // Header with back button
+            _buildHeader(),
 
-                  const SizedBox(height: AppSizes.paddingXL),
-
-                  // Title
-                  Center(
-                    child: Text(
-                      AppStrings.login,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  // Illustration placeholder
-                  Center(
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                      ),
-                      child: Icon(
-                        Icons.person_outline_rounded,
-                        size: 100,
-                        color: AppColors.primary.withAlpha((0.5 * 255).round()),
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 500.ms, delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
-
-                  const SizedBox(height: AppSizes.paddingXL),
-
-                  // Email field
-                  CustomTextField(
-                    label: AppStrings.email,
-                    hint: 'example@email.com',
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ).animate().fadeIn(duration: 500.ms, delay: 300.ms).slideX(begin: -0.1),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  // Password field
-                  CustomTextField(
-                    label: AppStrings.password,
-                    hint: '••••••••••',
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.textSecondary,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ).animate().fadeIn(duration: 500.ms, delay: 400.ms).slideX(begin: -0.1),
-
-                  const SizedBox(height: AppSizes.paddingXL),
-
-                  // Login button
-                  Consumer<UserProvider>(
-                    builder: (context, userProvider, child) {
-                      return CustomButton(
-                        text: userProvider.isLoading ? 'Loading...' : AppStrings.login,
-                        onPressed: userProvider.isLoading ? () {} : _handleLogin,
-                        width: double.infinity,
-                      );
-                    },
-                  ).animate().fadeIn(duration: 500.ms, delay: 500.ms).slideY(begin: 0.2),
-
-                  const SizedBox(height: AppSizes.paddingXL),
-
-                  // Divider
-                  const Divider(color: AppColors.inputBackground),
-
-                  const SizedBox(height: AppSizes.paddingM),
-
-                  // Sign up link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSizes.paddingL),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Logo
+                      Center(
+                        child: Image.asset(
+                          'assets/images/medpass_logo.png',
+                          height: 60,
+                          fit: BoxFit.contain,
+                        ),
+                      ).animate().fadeIn(duration: 400.ms),
+
+                      const SizedBox(height: AppSizes.paddingXL),
+
+                      // Title
                       Text(
-                        AppStrings.noAccount,
+                        'Welcome Back',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ).animate().fadeIn(duration: 400.ms, delay: 50.ms),
+
+                      const SizedBox(height: AppSizes.paddingS),
+
+                      Text(
+                        'Sign in to access your health passport',
                         style: GoogleFonts.inter(
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
+                          color: AppColors.textSecondary,
                         ),
-                      ),
-                      const SizedBox(width: AppSizes.paddingXS),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushReplacementNamed(context, '/signup');
+                      ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
+
+                      const SizedBox(height: AppSizes.paddingXL),
+
+                      // Email field
+                      CustomTextField(
+                        label: AppStrings.email,
+                        hint: 'example@email.com',
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
                         },
-                        child: Text(
-                          AppStrings.signUp,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textDark,
+                      ).animate().fadeIn(duration: 400.ms, delay: 150.ms),
+
+                      const SizedBox(height: AppSizes.paddingM),
+
+                      // Password field
+                      CustomTextField(
+                        label: AppStrings.password,
+                        hint: '••••••••••',
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            color: AppColors.textSecondary,
                           ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
-                      ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
+                      ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
+
+                      const SizedBox(height: AppSizes.paddingXL),
+
+                      // Login button
+                      Consumer<UserProvider>(
+                        builder: (context, userProvider, child) {
+                          return CustomButton(
+                            text: userProvider.isLoading ? 'Loading...' : AppStrings.login,
+                            onPressed: userProvider.isLoading ? () {} : _handleLogin,
+                            width: double.infinity,
+                          );
+                        },
+                      ).animate().fadeIn(duration: 400.ms, delay: 250.ms),
+
+                      const SizedBox(height: AppSizes.paddingL),
+
+                      // Sign up link
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Don't have an account? ",
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushReplacementNamed(context, '/signup');
+                            },
+                            child: Text(
+                              AppStrings.signUp,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ).animate().fadeIn(duration: 400.ms, delay: 300.ms),
                     ],
-                  ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
-                ],
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.paddingS,
+        AppSizes.paddingS,
+        AppSizes.paddingL,
+        0,
+      ),
+      child: Row(
+        children: [
+          // Back button
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(
+              Icons.arrow_back_ios_rounded,
+              color: AppColors.textDark,
+            ),
+          ),
+          const Spacer(),
+        ],
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_doc_scanner/flutter_doc_scanner.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +13,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:projet/core/constants.dart';
 import 'package:projet/providers/user_provider.dart';
 import 'package:projet/screens/files/upload_file_screen.dart';
+import 'package:projet/services/image_enhancement_service.dart';
 import 'package:projet/services/language_detection_service.dart';
 import 'package:projet/services/translation_service.dart';
 import 'package:projet/widgets/ocr_service.dart';
@@ -28,10 +31,12 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
   final LanguageDetectionService _langDetectionService = LanguageDetectionService();
 
   File? _imageFile;
+  File? _enhancedImageFile; // Enhanced version of the image for OCR
   String? _recognizedText;
   String? _translatedText;
   File? _generatedPdfFile;
   bool _loading = false;
+  bool _enhancing = false;
   bool _translating = false;
   bool _saving = false;
   bool _detectingLanguage = false;
@@ -69,6 +74,8 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
   void dispose() {
     _ocrService.dispose();
     _langDetectionService.dispose();
+    // Clean up temporary enhanced image
+    ImageEnhancementService.cleanupEnhancedImage(_enhancedImageFile);
     super.dispose();
   }
 
@@ -130,10 +137,10 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
     );
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final hasPermission = source == ImageSource.camera
-        ? await _requestCameraPermission()
-        : await _requestGalleryPermission();
+  /// Scan document using ML Kit Document Scanner
+  /// Provides: edge detection, perspective correction, cropping, enhancement
+  Future<void> _scanWithDocScanner() async {
+    final hasPermission = await _requestCameraPermission();
     if (!hasPermission) return;
 
     setState(() {
@@ -142,11 +149,135 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
       _translatedText = null;
       _generatedPdfFile = null;
       _detectedLanguage = null;
-      _sourceLanguage = null; // Reset to auto-detect
+      _sourceLanguage = null;
+      _enhancedImageFile = null;
     });
 
     try {
-      final XFile? picked = await _picker.pickImage(source: source, imageQuality: 100);
+      // Use Flutter Doc Scanner (ML Kit Document Scanner API)
+      // This provides: edge detection, perspective correction, cropping
+      // Use getScannedDocumentAsImages to get image paths directly
+      final dynamic scannedDocuments = await FlutterDocScanner().getScannedDocumentAsImages(
+        page: 1, // Scan single page
+      );
+
+      // Debug: Log what we received
+      debugPrint('FlutterDocScanner returned: $scannedDocuments');
+      debugPrint('Type: ${scannedDocuments.runtimeType}');
+
+      if (scannedDocuments == null) {
+        setState(() => _loading = false);
+        return;
+      }
+
+      // Get the scanned document path
+      // The scanner can return: List<String>, String, or Map with pdfUri/images
+      String? imagePath;
+
+      if (scannedDocuments is List) {
+        debugPrint('Is List with ${scannedDocuments.length} items');
+        if (scannedDocuments.isNotEmpty) {
+          imagePath = scannedDocuments.first?.toString();
+          debugPrint('First item: $imagePath');
+        }
+      } else if (scannedDocuments is String) {
+        imagePath = scannedDocuments;
+      } else if (scannedDocuments is Map) {
+        debugPrint('Is Map with keys: ${scannedDocuments.keys.toList()}');
+
+        // Convert to string and extract file path directly
+        // Format: {Uri: [Page{imageUri=file:///path/to/image.jpg}], Count: 1}
+        final rawString = scannedDocuments.toString();
+        debugPrint('Raw string: $rawString');
+
+        // Look for file:/// pattern and extract the path
+        final filePattern = RegExp(r'file:///([^\s\}\]]+\.(jpg|jpeg|png|pdf))');
+        final match = filePattern.firstMatch(rawString);
+        if (match != null) {
+          imagePath = '/${match.group(1)}';
+          debugPrint('Extracted from regex: $imagePath');
+        }
+
+        // If regex didn't work, try manual extraction
+        if (imagePath == null && rawString.contains('file:///')) {
+          final startIndex = rawString.indexOf('file:///');
+          if (startIndex != -1) {
+            var endIndex = rawString.indexOf('}', startIndex);
+            if (endIndex == -1) endIndex = rawString.indexOf(']', startIndex);
+            if (endIndex == -1) endIndex = rawString.length;
+
+            final fileUri = rawString.substring(startIndex, endIndex);
+            imagePath = fileUri.replaceFirst('file://', '');
+            debugPrint('Extracted manually: $imagePath');
+          }
+        }
+      }
+
+      debugPrint('Final imagePath: $imagePath');
+
+      if (imagePath == null || imagePath.isEmpty) {
+        setState(() => _loading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No document scanned. Raw: $scannedDocuments')),
+          );
+        }
+        return;
+      }
+
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        setState(() => _loading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to access scanned image')),
+          );
+        }
+        return;
+      }
+
+      setState(() => _imageFile = file);
+
+      // Apply image enhancement for better OCR
+      await _enhanceAndProcess(file);
+    } on PlatformException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scanner error: ${e.message}')),
+        );
+      }
+      setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scanning error: $e')),
+        );
+      }
+      setState(() => _loading = false);
+    }
+  }
+
+  /// Pick image from gallery (fallback option)
+  Future<void> _pickFromGallery() async {
+    final hasPermission = await _requestGalleryPermission();
+    if (!hasPermission) return;
+
+    setState(() {
+      _loading = true;
+      _recognizedText = null;
+      _translatedText = null;
+      _generatedPdfFile = null;
+      _detectedLanguage = null;
+      _sourceLanguage = null;
+      _enhancedImageFile = null;
+    });
+
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 100,
+      );
+
       if (picked == null) {
         setState(() => _loading = false);
         return;
@@ -155,19 +286,48 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
       final file = File(picked.path);
       setState(() => _imageFile = file);
 
-      final text = await _ocrService.scanDocument(picked.path);
+      // Apply image enhancement for better OCR
+      await _enhanceAndProcess(file);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+      setState(() => _loading = false);
+    }
+  }
+
+  /// Enhance image and run OCR
+  Future<void> _enhanceAndProcess(File imageFile) async {
+    try {
+      setState(() => _enhancing = true);
+
+      // Enhance the image for better OCR results
+      final enhancedFile = await ImageEnhancementService.enhanceDocument(imageFile);
+      setState(() => _enhancedImageFile = enhancedFile);
+
+      setState(() => _enhancing = false);
+
+      // Run OCR on the enhanced image
+      final text = await _ocrService.scanDocument(enhancedFile.path);
       setState(() => _recognizedText = text);
 
       // Auto-detect language after OCR
-      if (text != null && text.isNotEmpty) {
+      if (text.isNotEmpty) {
         await _detectLanguage(text);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Processing error: $e')),
+        );
       }
     } finally {
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _enhancing = false;
+      });
     }
   }
 
@@ -248,9 +408,13 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
     final sourceLanguageName = LanguageDetectionService.getLanguageName(effectiveSourceLanguage);
     final targetLanguageName = LanguageDetectionService.getLanguageName(_targetLanguage);
 
-    // Generate PDF with image, original text, and translation (if available)
+    // Use enhanced image if available, otherwise fall back to original
+    // This ensures the PDF contains the clean, processed document image
+    final imageForPdf = _enhancedImageFile ?? _imageFile!;
+
+    // Generate PDF with processed image, original text, and translation (if available)
     final pdfFile = await _ocrService.generateMedicalPdf(
-      _imageFile!,
+      imageForPdf,
       _recognizedText!,
       _translatedText ?? 'No translation available',
       sourceLanguage: sourceLanguageName,
@@ -447,65 +611,9 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
   }
 
   void _showImageSourceDialog() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingL),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.divider,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: AppSizes.paddingL),
-              Text(
-                'Select Image Source',
-                style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark),
-              ),
-              const SizedBox(height: AppSizes.paddingL),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildSourceOption(
-                      icon: Icons.camera_alt_rounded,
-                      title: 'Camera',
-                      subtitle: 'Take a new photo',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _pickImage(ImageSource.camera);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSizes.paddingM),
-                  Expanded(
-                    child: _buildSourceOption(
-                      icon: Icons.photo_library_rounded,
-                      title: 'Gallery',
-                      subtitle: 'Choose from gallery',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _pickImage(ImageSource.gallery);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.paddingL),
-            ],
-          ),
-        ),
-      ),
-    );
+    // Directly open the document scanner - it has both camera and gallery built-in
+    // This ensures all images get the same edge detection & perspective correction
+    _scanWithDocScanner();
   }
 
   Widget _buildSourceOption({
@@ -615,16 +723,16 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(AppSizes.paddingXL),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: AppColors.primaryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+          gradient: const LinearGradient(colors: [Color(0xFF1B4D6E), AppColors.accent], begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
-          boxShadow: [BoxShadow(color: AppColors.primary.withAlpha((0.3 * 255).round()), blurRadius: 15, offset: const Offset(0, 8))],
+          boxShadow: [BoxShadow(color: const Color(0xFF1B4D6E).withAlpha((0.3 * 255).round()), blurRadius: 15, offset: const Offset(0, 8))],
         ),
         child: Column(
           children: [
             const Icon(Icons.document_scanner_rounded, color: Colors.white, size: 48),
             const SizedBox(height: AppSizes.paddingM),
             Text('Start Scanning', style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-            Text('Camera or Gallery', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.white.withAlpha((0.8 * 255).round()))),
+            Text('Auto edge detection & enhancement', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.white.withAlpha((0.8 * 255).round()))),
           ],
         ),
       ),
@@ -632,6 +740,13 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
   }
 
   Widget _buildLoadingState() {
+    String loadingText = 'Processing image...';
+    if (_enhancing) {
+      loadingText = 'Enhancing document...';
+    } else if (_imageFile != null && _recognizedText == null) {
+      loadingText = 'Extracting text...';
+    }
+
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppSizes.radiusL)),
@@ -639,20 +754,49 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
         children: [
           const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)),
           const SizedBox(height: AppSizes.paddingM),
-          Text('Processing image...', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+          Text(loadingText, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+          if (_enhancing) ...[
+            const SizedBox(height: AppSizes.paddingS),
+            Text(
+              'Improving contrast & sharpness for better OCR',
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildImagePreview() {
-    return Container(
-      height: 200,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
-        image: DecorationImage(image: FileImage(_imageFile!), fit: BoxFit.cover),
-      ),
+    // Show enhanced image if available, otherwise show original
+    final displayImage = _enhancedImageFile ?? _imageFile!;
+
+    return Column(
+      children: [
+        Container(
+          height: 200,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            image: DecorationImage(image: FileImage(displayImage), fit: BoxFit.cover),
+          ),
+        ),
+        if (_enhancedImageFile != null) ...[
+          const SizedBox(height: AppSizes.paddingS),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.auto_fix_high, size: 14, color: AppColors.primary),
+              const SizedBox(width: 4),
+              Text(
+                'Enhanced for better OCR',
+                style: GoogleFonts.inter(fontSize: 12, color: AppColors.primary),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
@@ -664,7 +808,7 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
         icon: const Icon(Icons.refresh_rounded),
         label: const Text('Rescan'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.accentDark,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusM)),
@@ -739,7 +883,7 @@ class _OCRScanScreenState extends State<OCRScanScreen> {
             : const Icon(Icons.save_rounded),
         label: Text(_saving ? 'Processing...' : 'Save & Share'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.accentDark,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusM)),
