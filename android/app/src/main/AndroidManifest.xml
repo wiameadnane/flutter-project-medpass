@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+<<<<<<< HEAD
     <!-- ===================== -->
     <!-- REQUIRED PERMISSIONS -->
     <!-- ===================== -->
@@ -20,9 +21,18 @@
     <!-- ===================== -->
     <!-- APPLICATION -->
     <!-- ===================== -->
+=======
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="30" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
 
     <application
-        android:label="projet"
+        android:label="Med-Pass"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
@@ -30,13 +40,15 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
+<<<<<<< HEAD
             <!-- Theme while Flutter loads -->
+=======
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
@@ -48,6 +60,7 @@
 
         </activity>
 
+<<<<<<< HEAD
         <!-- Flutter embedding -->
         <meta-data
             android:name="flutterEmbedding"
@@ -59,11 +72,25 @@
     <!-- REQUIRED FOR TEXT PROCESSING -->
     <!-- ===================== -->
 
+=======
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
     </queries>
+<<<<<<< HEAD
 
 </manifest>
+=======
+</manifest>
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9

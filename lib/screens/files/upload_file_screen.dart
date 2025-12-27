@@ -1,8 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -13,11 +10,16 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/constants.dart';
 import '../../models/medical_file_model.dart';
 import '../../providers/user_provider.dart';
+<<<<<<< HEAD
 import '../../firebase_options.dart';
 import '../ocr_scan_screen.dart';
+=======
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
 
 class UploadFileScreen extends StatefulWidget {
-  const UploadFileScreen({super.key});
+  final PlatformFile initialFile;
+
+  const UploadFileScreen({super.key, required this.initialFile});
 
   @override
   State<UploadFileScreen> createState() => _UploadFileScreenState();
@@ -25,10 +27,10 @@ class UploadFileScreen extends StatefulWidget {
 
 class _UploadFileScreenState extends State<UploadFileScreen> {
   FileCategory _category = FileCategory.other;
-  final _nameController = TextEditingController();
+  late TextEditingController _nameController;
   final _descController = TextEditingController();
-  PlatformFile? _pickedFile;
   bool _isUploading = false;
+<<<<<<< HEAD
   double _progress = -1.0; // -1 => indeterminate
   final List<String> _logs = [];
   int _lastTransferred = -1;
@@ -36,10 +38,16 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
   int _attempt = 0;
   final int _maxAttempts = 3;
   final ImagePicker _imagePicker = ImagePicker();
+=======
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
 
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
+=======
+    _nameController = TextEditingController(text: widget.initialFile.name);
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
   }
 
   @override
@@ -49,6 +57,7 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
     super.dispose();
   }
 
+<<<<<<< HEAD
   Future<void> _pickFile() async {
     showModalBottomSheet(
       context: context,
@@ -305,106 +314,52 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
     );
   }
 
+=======
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
   Future<void> _upload() async {
-    if (_pickedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a file to upload')),
-      );
-      return;
-    }
-
     final userProvider = context.read<UserProvider>();
-    final user = userProvider.firebaseUser;
-    final uid = user?.uid ?? userProvider.user?.id;
+    final uid = userProvider.firebaseUser?.uid ?? userProvider.user?.id;
+
     if (uid == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No user logged in')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("User not logged in")));
       return;
     }
 
-    // wrap the upload in a retry loop — on web uploads can stall; try a few times
-    setState(() {
-      _isUploading = true;
-      _progress = (kIsWeb || _pickedFile!.path == null) ? -1.0 : 0.0;
-    });
+    setState(() => _isUploading = true);
 
-    _attempt = 0;
-    String? downloadUrl;
-    final basename = _pickedFile!.name;
-
-    while (_attempt < _maxAttempts) {
-      _attempt++;
-      final attemptMsg = 'Starting upload attempt #$_attempt/$_maxAttempts';
-      debugPrint(attemptMsg);
-      setState(() {
-        _logs.insert(0, attemptMsg);
-        if (_logs.length > 20) _logs.removeLast();
-      });
-
-      try {
-        downloadUrl = await _performSingleUpload(uid, basename);
-        // success
-        break;
-      } catch (e) {
-        final em = 'Attempt #$_attempt failed: ${e.toString()}';
-        debugPrint(em);
-        setState(() {
-          _logs.insert(0, em);
-          if (_logs.length > 20) _logs.removeLast();
-        });
-
-        // If we've exhausted attempts, rethrow to outer catch
-        if (_attempt >= _maxAttempts) {
-          rethrow;
-        }
-
-        // wait a bit before retry
-        await Future.delayed(Duration(seconds: 2 * _attempt));
-      }
-    }
-
-    // After successful upload, save metadata
     try {
-      if (downloadUrl == null) {
-        throw Exception('Upload failed after $_maxAttempts attempts');
+      final basename = widget.initialFile.name;
+      final storagePath = 'users/$uid/medical_files/${DateTime.now().millisecondsSinceEpoch}_$basename';
+      final ref = FirebaseStorage.instance.ref().child(storagePath);
+
+      UploadTask uploadTask;
+      if (kIsWeb || widget.initialFile.path == null) {
+        uploadTask = ref.putData(widget.initialFile.bytes!, SettableMetadata(contentType: _guessMimeType(basename)));
+      } else {
+        uploadTask = ref.putFile(File(widget.initialFile.path!), SettableMetadata(contentType: _guessMimeType(basename)));
       }
+
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
 
       final model = MedicalFileModel(
-        id: '',
-        name: _nameController.text.isNotEmpty ? _nameController.text : basename,
+        id: '', // La clé sera générée par Firestore
+        name: _nameController.text.trim(),
         category: _category,
+<<<<<<< HEAD
         description:
             _descController.text.isNotEmpty ? _descController.text : null,
+=======
+        description: _descController.text.trim().isEmpty ? null : _descController.text.trim(),
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
         fileUrl: downloadUrl,
         uploadedAt: DateTime.now(),
       );
 
-      final success = await userProvider.addMedicalFile(model);
-
-      setState(() {
-        _isUploading = false;
-      });
-
-      if (!mounted) return;
-
-      final msg = success
-          ? 'File metadata saved to Firestore.'
-          : 'Failed to save file metadata: ${userProvider.error}';
-      debugPrint(msg);
-      setState(() {
-        _logs.insert(0, msg);
-        if (_logs.length > 20) _logs.removeLast();
-      });
-
-      if (success) {
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(userProvider.error ?? 'Upload failed')),
-        );
-      }
+      await userProvider.addMedicalFile(model);
+      if (mounted) Navigator.pop(context);
     } catch (e) {
+<<<<<<< HEAD
       final msg = 'Upload error: ${e.toString()}';
       debugPrint(msg);
       setState(() {
@@ -530,30 +485,35 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
       } catch (_) {}
       await sub.cancel();
       rethrow;
+=======
+      setState(() => _isUploading = false);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Upload Error: $e")));
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Upload Document', style: GoogleFonts.dmSans()),
+        title: Text('Document Details', style: GoogleFonts.dmSans()),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textDark,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
       ),
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: LayoutBuilder(builder: (context, constraints) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 900),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.paddingL),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSizes.paddingL),
+        child: Column(
+          children: [
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusL)),
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.paddingM),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+<<<<<<< HEAD
                     Card(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusL),
@@ -715,56 +675,63 @@ class _UploadFileScreenState extends State<UploadFileScreen> {
                           ),
                         ),
                       ),
+=======
+                    DropdownButtonFormField<FileCategory>(
+                      value: _category,
+                      items: FileCategory.values.map((c) => DropdownMenuItem(value: c, child: Text(_categoryName(c)))).toList(),
+                      onChanged: (v) => setState(() => _category = v ?? FileCategory.other),
+                      decoration: const InputDecoration(labelText: 'Category'),
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
                     ),
+                    const SizedBox(height: 15),
+                    TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Display Name')),
+                    const SizedBox(height: 15),
+                    TextField(controller: _descController, decoration: const InputDecoration(labelText: 'Description (optional)'), maxLines: 2),
+                    const SizedBox(height: 20),
+                    _buildPreviewTile(),
+                    if (_isUploading) const Padding(padding: EdgeInsets.only(top: 20), child: LinearProgressIndicator()),
                   ],
                 ),
               ),
             ),
-          );
-        }),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: _isUploading ? null : _upload,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 55),
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(_isUploading ? 'Uploading...' : 'Confirm & Save', style: const TextStyle(color: Colors.white, fontSize: 16)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewTile() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: AppColors.backgroundLight, borderRadius: BorderRadius.circular(10)),
+      child: Row(
+        children: [
+          const Icon(Icons.insert_drive_file, color: AppColors.primary),
+          const SizedBox(width: 10),
+          Expanded(child: Text(widget.initialFile.name, style: const TextStyle(fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+        ],
       ),
     );
   }
 
   String _categoryName(FileCategory c) {
     switch (c) {
-      case FileCategory.allergyReport:
-        return 'Allergy Report';
-      case FileCategory.prescription:
-        return 'Recent Prescriptions';
-      case FileCategory.birthCertificate:
-        return 'Birth Certificate';
-      case FileCategory.medicalAnalysis:
-        return 'Medical Analysis';
-      case FileCategory.other:
-        return 'Other';
+      case FileCategory.allergyReport: return 'Allergy Report';
+      case FileCategory.prescription: return 'Prescription';
+      case FileCategory.medicalAnalysis: return 'Medical Analysis';
+      default: return 'Other';
     }
   }
 
-  Color _categoryColor(FileCategory c) {
-    switch (c) {
-      case FileCategory.allergyReport:
-        return AppColors.allergy;
-      case FileCategory.prescription:
-        return AppColors.medication;
-      case FileCategory.birthCertificate:
-        return AppColors.document;
-      case FileCategory.medicalAnalysis:
-        return AppColors.bloodType;
-      case FileCategory.other:
-        return AppColors.primary;
-    }
-  }
-
-  String _guessMimeType(String filename) {
-    final lower = filename.toLowerCase();
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-    if (lower.endsWith('.gif')) return 'image/gif';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.bmp')) return 'image/bmp';
-    if (lower.endsWith('.pdf')) return 'application/pdf';
-    if (lower.endsWith('.txt')) return 'text/plain';
-    return 'application/octet-stream';
-  }
+  String _guessMimeType(String filename) => filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg';
 }

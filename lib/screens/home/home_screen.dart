@@ -842,6 +842,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFAB(BuildContext context) {
     return FloatingActionButton(
+<<<<<<< HEAD
       onPressed: () => Navigator.push(
         context,
         MaterialPageRoute(
@@ -852,6 +853,18 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.accent,
       elevation: 8,
       child: const Icon(Icons.document_scanner, color: Colors.white, size: 28),
+=======
+      onPressed: () {
+        Navigator.pushNamed(context, '/scanner');
+      },
+      backgroundColor: AppColors.accent,
+      elevation: 8,
+      child: const Icon(
+        Icons.document_scanner_rounded,
+        color: Colors.white,
+        size: 28,
+      ),
+>>>>>>> 3268ed02d21c8b5387ffb1bb218f054aaf1db5d9
     );
   }
 
